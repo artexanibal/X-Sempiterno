@@ -1,0 +1,2938 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="referrer" content="no-referrer">
+<title>X-Codex Note Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#100e0a;
+  --ink-2:#181510;
+  --ink-3:#221e17;
+  --parchment:#e9dcc0;
+  --parchment-dim:#a99a7c;
+  --gold:#c99a3f;
+  --gold-dim:#8a6d33;
+  --sepia:#8b6b43;
+  --terracotta:#b5533c;
+  --sage:#7c8a5e;
+  --line:#33291c;
+  --shadow: 0 10px 30px rgba(0,0,0,.45);
+  --accent: var(--gold);
+  --c-letter: #ffffff;
+  --icon-bg: linear-gradient(135deg, #15110a 0%, #2a2013 55%, var(--accent) 145%);
+  --icon-shadow: 0 3px 10px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.06);
+  --icon-stroke: #f3e8cf;
+  --gear-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='30' fill='white'/%3E%3Cg fill='white'%3E%3Crect x='42' y='1' width='16' height='19'/%3E%3Crect x='42' y='80' width='16' height='19'/%3E%3Crect x='1' y='42' width='19' height='16'/%3E%3Crect x='80' y='42' width='19' height='16'/%3E%3Crect x='42' y='1' width='16' height='19' transform='rotate(45 50 50)'/%3E%3Crect x='42' y='80' width='16' height='19' transform='rotate(45 50 50)'/%3E%3Crect x='1' y='42' width='19' height='16' transform='rotate(45 50 50)'/%3E%3Crect x='80' y='42' width='19' height='16' transform='rotate(45 50 50)'/%3E%3C/g%3E%3Ccircle cx='50' cy='50' r='13' fill='black'/%3E%3C/svg%3E");
+}
+/* ---------- color de interfaz seleccionable ---------- */
+body[data-accent="rosa"]{ --accent:#e3a3c4; --gold-dim:#b97a97; }
+body[data-accent="cian"]{ --accent:#8fabd6; --gold-dim:#6b7fa8; }
+body[data-accent="menta"]{ --accent:#7fc9a8; --gold-dim:#589a7e; }
+body[data-accent="coral"]{ --accent:#e0925c; --gold-dim:#b06a3c; }
+.gear-mark{
+  content:""; display:block;
+  -webkit-mask-image:var(--gear-mask); mask-image:var(--gear-mask);
+  -webkit-mask-size:contain; mask-size:contain;
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  -webkit-mask-position:center; mask-position:center;
+  background-color:currentColor; pointer-events:none;
+}
+body.theme-light{
+  --ink:#f2ead9;
+  --ink-2:#eae0c9;
+  --ink-3:#ddd1b4;
+  --parchment:#241f18;
+  --parchment-dim:#5a4f3c;
+  --line:#cabb98;
+  --shadow: 0 10px 24px rgba(90,70,30,.15);
+  --c-letter: #241f18;
+  /* modo blanco: cuero de encuadernación tostado, con relieve suave en vez de sombra dura */
+  --icon-bg: linear-gradient(135deg, #f7f1e1 0%, #e6d5b0 48%, var(--accent) 155%);
+  --icon-shadow: 0 2px 8px rgba(120,95,45,.22), inset 0 0 0 1.5px rgba(138,109,51,.45);
+  --icon-stroke: #3a2f1c;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--ink); color:var(--parchment);
+  font-family:'EB Garamond', serif; overflow:hidden;
+  transition: background .5s ease, color .5s ease;
+}
+.app{ position:relative; height:100vh; display:flex; flex-direction:column; }
+
+/* ---------- background: blueprint/schematic texture ---------- */
+#bg-canvas{ position:fixed; inset:0; z-index:0; opacity:.35; pointer-events:none; }
+
+/* ---------- trazos vivos de fondo (tributo a bocetos de Da Vinci) ---------- */
+.bg-strokes{ position:fixed; inset:0; z-index:0; width:100%; height:100%; pointer-events:none; }
+.sketch-path{
+  fill:none; stroke:var(--gold-dim); stroke-width:1; stroke-linecap:round;
+  stroke-dasharray:600; stroke-dashoffset:600; opacity:0;
+  animation:drawLine 20s ease-in-out infinite;
+}
+.sketch-path.p2{ stroke:var(--sepia); animation-duration:26s; animation-delay:2.5s; }
+.sketch-path.p3{ animation-duration:22s; animation-delay:6s; }
+@keyframes drawLine{
+  0%{ stroke-dashoffset:600; opacity:0; }
+  12%{ opacity:.4; }
+  50%{ stroke-dashoffset:0; opacity:.4; }
+  88%{ opacity:.4; }
+  100%{ stroke-dashoffset:-600; opacity:0; }
+}
+.sketch-circle{
+  fill:none; stroke:var(--gold-dim); stroke-width:1; stroke-dasharray:8 6; opacity:.14;
+  transform-origin:center; animation:rotateSlow 70s linear infinite;
+}
+.sketch-circle.c2{ stroke:var(--sepia); animation-duration:95s; animation-direction:reverse; }
+@keyframes rotateSlow{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+
+/* ---------- logo compás encerrado en cuadro (tradición familia X) ---------- */
+/* el cuadro tiene fondo propio fijo, así el logo siempre se ve igual en modo noche o modo blanco */
+.app-icon-square{
+  display:inline-flex; align-items:center; justify-content:center;
+  background:var(--icon-bg);
+  border-radius:24%; box-shadow:var(--icon-shadow);
+  overflow:hidden; flex-shrink:0;
+}
+.compass-logo circle.compass-circle{
+  fill:none; stroke:var(--accent); stroke-width:1.2; stroke-dasharray:6 5; opacity:.7;
+  transform-origin:100px 100px; animation:rotateSlow 40s linear infinite;
+}
+.compass-logo line{ stroke:var(--icon-stroke); stroke-width:2.5; stroke-linecap:round; }
+.compass-logo .pivot{ fill:var(--accent); }
+.compass-logo .tip{ fill:var(--icon-stroke); }
+.compass-logo .arm{ transform-origin:100px 40px; animation:swingArm 6s ease-in-out infinite; }
+.compass-logo .arm2{ transform-origin:100px 40px; animation:swingArm2 6s ease-in-out infinite; }
+@keyframes swingArm{ 0%,100%{transform:rotate(-7deg);} 50%{transform:rotate(9deg);} }
+@keyframes swingArm2{ 0%,100%{transform:rotate(9deg);} 50%{transform:rotate(-7deg);} }
+/* ondas: homenaje a los estudios de turbulencia del agua de Da Vinci */
+.vortex-arm{ fill:none; stroke:var(--icon-stroke); stroke-width:1.4; opacity:.45; stroke-linecap:round; }
+.vortex-group{ transform-origin:100px 100px; animation:rotateSlow 55s linear infinite; }
+.wave-line{ fill:none; stroke:var(--accent); stroke-width:1.6; opacity:.55; stroke-linecap:round; }
+.wave-line.w2{ opacity:.3; stroke-width:1.2; }
+.logo-icon{ display:inline-block; width:26px; height:26px; vertical-align:-7px; margin-right:7px; padding:3px; }
+.logo-icon .compass-circle{ animation-duration:30s; }
+
+/* ---------- pantalla principal (splash) ---------- */
+.splash{
+  position:fixed; inset:0; z-index:100; background:var(--ink);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; padding:30px; transition:opacity .6s ease, visibility .6s ease; cursor:pointer;
+}
+.splash.hide{ opacity:0; visibility:hidden; pointer-events:none; }
+.splash-logo{ width:132px; height:132px; margin-bottom:20px; }
+.splash-name{ font-family:'Cormorant Garamond', serif; font-weight:700; font-size:32px; letter-spacing:.5px; }
+.splash-name .x{ color:var(--accent); }
+.splash-name .c{ color:var(--c-letter); }
+.splash-quote{ font-style:italic; color:var(--parchment-dim); font-size:13.5px; margin-top:16px; max-width:270px; line-height:1.55; }
+.splash-byline{
+  position:absolute; bottom:34px; left:0; right:0; text-align:center;
+  font-family:'Space Mono', monospace; font-size:10px; color:var(--parchment-dim); letter-spacing:1px;
+}
+.splash-byline .x, .splash-byline .l{ color:var(--accent); font-weight:700; }
+.splash-version{
+  position:absolute; bottom:18px; left:0; right:0; text-align:center;
+  font-family:'Space Mono', monospace; font-size:8.5px; color:var(--parchment-dim);
+  letter-spacing:1.2px; opacity:.55;
+}
+.splash-hint{
+  position:absolute; bottom:36px; font-family:'Space Mono', monospace; font-size:9px; color:var(--parchment-dim);
+  letter-spacing:1.5px; animation:hintPulse 2.2s ease-in-out infinite;
+}
+@keyframes hintPulse{ 0%,100%{opacity:.25;} 50%{opacity:.7;} }
+
+/* ---------- header ---------- */
+header.top{
+  position:relative; z-index:2; padding:16px 18px 10px; text-align:center;
+  border-bottom:1px solid var(--line);
+}
+.logo{
+  font-family:'Cormorant Garamond', serif; font-weight:700; font-size:26px; letter-spacing:.5px;
+  cursor:pointer; user-select:none; display:inline-flex; align-items:baseline; gap:2px;
+}
+.logo .x{ color: var(--accent); }
+.logo .c{ color:var(--c-letter); }
+.logo .rest{ color: var(--parchment); }
+.pro-badge{
+  font-family:'Space Mono', monospace; font-size:9px; letter-spacing:1px; color:var(--ink);
+  background:var(--accent); padding:2px 6px; border-radius:20px; margin-left:6px; vertical-align:2px;
+}
+.quote{
+  font-style:italic; font-size:12.5px; color:var(--parchment-dim); margin-top:4px;
+  font-family:'EB Garamond', serif; letter-spacing:.2px;
+}
+.byline{ font-family:'Space Mono', monospace; font-size:9px; color:var(--parchment-dim); margin-top:6px; letter-spacing:.5px; }
+.byline .x, .byline .l{ color:var(--accent); font-weight:700; }
+
+/* ---------- tabs content ---------- */
+main{ position:relative; z-index:1; flex:1; overflow:hidden; }
+.view{ position:absolute; inset:0; padding:14px 14px 84px; overflow-y:auto; opacity:0; pointer-events:none; transform:translateY(6px); transition:opacity .25s ease, transform .25s ease; }
+.view.active{ opacity:1; pointer-events:auto; transform:none; }
+.view::-webkit-scrollbar{width:4px;} .view::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
+
+h2.section-title{
+  font-family:'Cormorant Garamond', serif; font-weight:600; font-size:20px; margin:4px 0 12px;
+  display:flex; align-items:center; gap:8px; color:var(--parchment);
+}
+h2.section-title .rule{ flex:1; height:1px; background:var(--line); }
+
+/* ---------- nav bar: panel mecánico ---------- */
+nav.tabbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:5; display:flex;
+  background:linear-gradient(180deg, var(--ink-3), var(--ink-2)); border-top:1px solid var(--line);
+  padding:14px 6px calc(8px + env(safe-area-inset-bottom)); gap:2px; overflow:visible;
+}
+nav.tabbar::before{
+  content:""; position:absolute; top:5px; left:16px; right:16px; height:1px;
+  background-image:radial-gradient(circle, var(--gold-dim) 1.1px, transparent 1.6px);
+  background-size:16px 1px; background-repeat:repeat-x; opacity:.6;
+}
+nav.tabbar button{
+  flex:1; background:none; border:none; color:var(--parchment-dim); font-family:'Space Mono', monospace;
+  font-size:9px; letter-spacing:.3px; padding:0; display:flex; flex-direction:column; align-items:center; gap:6px;
+}
+.dial{
+  width:38px; height:38px; border-radius:50%; border:1px solid var(--line); background:var(--ink);
+  display:flex; align-items:center; justify-content:center; position:relative; transition:border-color .2s, box-shadow .2s;
+}
+.dial svg{ width:18px; height:18px; stroke:var(--parchment-dim); fill:none; stroke-width:1.4; transition:stroke .2s; }
+nav.tabbar button.active .dial{ border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+nav.tabbar button.active .dial svg{ stroke:var(--accent); }
+nav.tabbar button.active .dial::after{
+  content:""; position:absolute; inset:-5px; border-radius:50%; border:1px dashed var(--accent); opacity:.7;
+  animation:rotateSlow 14s linear infinite;
+}
+nav.tabbar button.active .lbl{ color:var(--accent); }
+
+/* ---------- cards / common ---------- */
+.card{
+  background:var(--ink-2); border:1px solid var(--line); border-radius:14px; padding:14px;
+  margin-bottom:10px; box-shadow:var(--shadow);
+}
+.empty{
+  text-align:center; padding:40px 20px; color:var(--parchment-dim); font-style:italic; font-size:14px;
+}
+/* ---------- botones: pasador de mecanismo con engrane giratorio ---------- */
+button.pill{
+  display:block; width:fit-content; margin:10px auto 0;
+  background:var(--ink-3); color:var(--parchment); border:1.5px dashed var(--line);
+  padding:9px 22px 9px 30px; font-family:'EB Garamond', serif; font-size:13.5px; cursor:pointer;
+  position:relative; clip-path: polygon(9% 0%, 91% 0%, 100% 50%, 91% 100%, 9% 100%, 0% 50%);
+}
+button.pill::before{
+  content:""; position:absolute; left:12px; top:50%; transform:translateY(-50%);
+  width:12px; height:12px; color:var(--parchment-dim); opacity:.55;
+  animation:rotateSlow 5s linear infinite; pointer-events:none;
+  -webkit-mask-image:var(--gear-mask); mask-image:var(--gear-mask);
+  -webkit-mask-size:contain; mask-size:contain; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  background-color:currentColor;
+}
+button.pill:active::before{ animation-duration:.6s; }
+button.pill.gold{
+  background:radial-gradient(circle at 30% 25%, #e6bd6c, var(--accent) 75%); color:var(--ink);
+  border:1.5px solid var(--gold-dim); font-weight:600;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,.4), inset 0 -3px 5px rgba(0,0,0,.25), 0 3px 8px rgba(0,0,0,.3);
+}
+button.pill.gold::before{ color:rgba(0,0,0,.4); opacity:.6; animation-duration:3.2s; }
+button.pill.gold:active::before{ animation-duration:.5s; }
+
+/* ---------- interruptor tipo palanca ---------- */
+.lever{
+  width:44px; height:24px; border-radius:12px; background:var(--ink); border:1px solid var(--line);
+  position:relative; cursor:pointer; flex-shrink:0; transition:border-color .2s;
+}
+.lever .knob{
+  width:16px; height:16px; border-radius:50%; background:var(--parchment-dim); position:absolute;
+  top:3px; left:3px; transition:left .2s ease, background .2s ease;
+  display:flex; align-items:center; justify-content:center;
+}
+.lever .knob svg{ width:10px; height:10px; stroke:var(--ink); fill:none; stroke-width:2; opacity:.55; transition:opacity .2s; }
+.lever.on{ border-color:var(--accent); }
+.lever.on .knob{ left:23px; background:var(--accent); }
+.lever.on .knob svg{ opacity:.9; animation:rotateSlow 2.2s linear infinite; }
+
+/* ---------- cinta de tiempo interactiva (reemplaza el dial de flechas) ---------- */
+.time-ribbon-wrap{ margin:14px 0 18px; }
+.time-ribbon-display{
+  text-align:center; font-family:'Space Mono', monospace; font-size:30px; color:var(--parchment);
+  margin-bottom:6px; letter-spacing:1px;
+}
+.time-ribbon-track{ position:relative; height:58px; }
+.time-ribbon-center-marker{
+  position:absolute; left:50%; top:0; bottom:6px; width:2px; background:var(--accent);
+  transform:translateX(-50%); pointer-events:none; z-index:2; border-radius:2px;
+  box-shadow:0 0 6px rgba(201,154,63,.5);
+}
+.time-ribbon-scroll{
+  position:relative; height:100%; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory;
+  display:flex; align-items:flex-end; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+}
+.time-ribbon-scroll::-webkit-scrollbar{ display:none; }
+.time-tick{
+  flex:0 0 auto; width:14px; scroll-snap-align:center; display:flex; flex-direction:column;
+  align-items:center; justify-content:flex-end; height:100%; position:relative; cursor:pointer;
+}
+.time-tick .bar{ width:1.5px; height:9px; background:var(--line); border-radius:2px; }
+.time-tick.half .bar{ height:16px; }
+.time-tick.hour .bar{ height:25px; background:var(--gold-dim); width:2px; }
+.time-tick .lab{
+  position:absolute; bottom:29px; font-family:'Space Mono', monospace; font-size:9px; color:var(--parchment-dim);
+  white-space:nowrap; left:50%; transform:translateX(-50%);
+}
+.time-ribbon-hint{ text-align:center; font-size:9.5px; color:var(--parchment-dim); font-family:'Space Mono', monospace; margin-top:4px; opacity:.6; }
+.ribbon-label{
+  text-align:center; font-family:'Space Mono', monospace; font-size:9.5px; letter-spacing:1px;
+  color:var(--gold-dim); margin-top:10px;
+}
+.ribbon-hint-small{ text-align:center; font-size:10px; color:var(--parchment-dim); font-style:italic; margin-top:8px; }
+.duration-chip{
+  padding:6px 11px; border-radius:14px; border:1px dashed var(--line); background:var(--ink-3);
+  color:var(--parchment-dim); font-family:'Space Mono', monospace; font-size:10px; cursor:pointer;
+  transition:border-color .15s, background .15s, color .15s;
+}
+.duration-chip.active{ border-color:var(--accent); background:var(--accent); color:var(--ink); font-weight:700; }
+.inline-preview{
+  display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 14px; max-height:100px; overflow-y:auto;
+  padding:8px; border:1px dashed var(--line); border-radius:10px; background:rgba(0,0,0,.12);
+}
+.preview-chip{
+  font-family:'Space Mono', monospace; font-size:9.5px; color:var(--parchment-dim); background:var(--ink);
+  border:1px solid var(--line); border-radius:12px; padding:4px 9px; white-space:nowrap;
+}
+.preview-empty{ font-size:11px; color:var(--parchment-dim); font-style:italic; }
+
+/* ---------- tabla del día ---------- */
+.day-table{ width:100%; border-collapse:collapse; font-size:12.5px; margin-top:6px; }
+.dt-row{ border-bottom:1px solid var(--line); }
+.dt-row.has-items{ background:rgba(201,154,63,.05); }
+.dt-hour{
+  width:46px; padding:5px 6px; font-family:'Space Mono', monospace; font-size:9.5px; color:var(--parchment-dim);
+  vertical-align:top; border-right:1px dashed var(--line); white-space:nowrap;
+}
+.dt-content{ padding:3px 8px; }
+.dt-item{ display:flex; align-items:center; gap:7px; padding:5px 0; flex-wrap:wrap; }
+.dt-time{ font-family:'Space Mono', monospace; font-size:10px; color:var(--accent); flex-shrink:0; }
+.dt-title{ flex:1; font-size:13px; min-width:60px; }
+.dt-del{ background:none; border:none; color:var(--parchment-dim); cursor:pointer; font-size:13px; padding:2px 4px; }
+
+.weekday-chip{
+  width:34px; height:34px; border-radius:50%; border:1.5px dashed var(--line); background:var(--ink-3);
+  color:var(--parchment-dim); font-family:'Space Mono', monospace; font-size:12px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; transition:border-color .15s, background .15s, color .15s;
+}
+.weekday-chip.on{ border-color:var(--accent); border-style:solid; background:var(--accent); color:var(--ink); font-weight:700; }
+.routine-badge{ color:var(--gold-dim); font-size:13px; }
+
+.color-picker-label{
+  font-family:'Space Mono', monospace; font-size:9.5px; color:var(--parchment-dim);
+  letter-spacing:.5px; margin-top:14px; text-transform:uppercase;
+}
+.theme-row{
+  display:flex; align-items:flex-start; gap:14px; border:1.5px dashed var(--line); border-radius:14px;
+  padding:14px; margin-top:6px;
+}
+.theme-row .lever{ margin-top:2px; flex-shrink:0; }
+.theme-row-title{ font-family:'Cormorant Garamond', serif; font-size:16px; color:var(--parchment); font-weight:600; }
+.theme-row-sub{ font-size:11.5px; color:var(--parchment-dim); margin-top:3px; line-height:1.4; }
+.accent-swatch-row{ display:flex; flex-wrap:wrap; gap:14px; margin:12px 0 20px; justify-content:center; }
+.accent-swatch{ display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; background:none; border:none; }
+.accent-swatch .dot{
+  width:44px; height:44px; border-radius:50%; position:relative; border:2px solid transparent;
+  transition:border-color .2s, transform .2s;
+}
+.accent-swatch .dot::after{
+  content:""; position:absolute; inset:-6px; border-radius:50%; border:1.3px dashed var(--gold-dim);
+  opacity:0; animation:rotateSlow 6s linear infinite;
+}
+.accent-swatch.selected .dot{ border-color:var(--parchment); transform:scale(1.06); }
+.accent-swatch.selected .dot::after{ opacity:.6; }
+.accent-swatch .lab{ font-family:'Space Mono', monospace; font-size:8.5px; color:var(--parchment-dim); text-align:center; max-width:60px; }
+.accent-swatch.selected .lab{ color:var(--parchment); }
+.color-chip{
+  display:inline-flex; align-items:center; gap:7px; padding:7px 13px 7px 10px;
+  border-radius:20px; border:1.5px dashed var(--line); background:var(--ink-3);
+  cursor:pointer; font-family:'EB Garamond', serif; font-size:12.5px; color:var(--parchment-dim);
+  transition:border-color .15s, color .15s, background .15s;
+}
+.color-chip .dot{
+  width:11px; height:11px; border-radius:50%; background:var(--chip-color); flex-shrink:0;
+  box-shadow:0 0 0 2px transparent; transition:box-shadow .15s;
+}
+.color-chip.selected{
+  border-color:var(--chip-color); color:var(--parchment); background:var(--ink-2);
+}
+.color-chip.selected .dot{ box-shadow:0 0 0 2px rgba(255,255,255,.25); }
+
+.mini-cal-wrap{
+  border:1.5px dashed var(--gold-dim); border-radius:14px; padding:12px; margin-top:12px;
+  background:rgba(201,154,63,.04);
+}
+@keyframes focusGlow{
+  0%{ box-shadow:0 0 0 0 rgba(201,154,63,.55); border-color:var(--accent); }
+  70%{ box-shadow:0 0 0 10px rgba(201,154,63,0); }
+  100%{ box-shadow:0 0 0 0 rgba(201,154,63,0); border-color:var(--gold-dim); }
+}
+.mini-cal-wrap.focus-pulse{ animation:focusGlow 1.1s ease-out; }
+.mic-inline-btn{
+  width:44px; height:44px; border-radius:50%; border:1px solid var(--line); background:var(--ink);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; margin:0 auto 12px; transition:border-color .2s;
+  position:relative;
+}
+.mic-inline-btn::after{
+  content:""; position:absolute; right:-5px; bottom:-5px; width:16px; height:16px; color:var(--gold-dim); opacity:.7;
+  animation:rotateSlow 6s linear infinite;
+  -webkit-mask-image:var(--gear-mask); mask-image:var(--gear-mask);
+  -webkit-mask-size:contain; mask-size:contain; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  background-color:currentColor;
+}
+.mic-inline-btn svg{ width:19px; height:19px; stroke:var(--parchment-dim); fill:none; stroke-width:1.5; }
+.mic-inline-btn.recording{ border-color:var(--terracotta); animation:pulseMic 1s infinite; }
+.mic-inline-btn.recording svg{ stroke:var(--terracotta); }
+.dictation-banner{
+  display:flex; align-items:center; justify-content:center; gap:8px; margin:0 0 12px;
+  font-family:'Space Mono', monospace; font-size:11px; color:var(--terracotta); letter-spacing:.3px;
+}
+.dictation-dot{
+  width:6px; height:6px; border-radius:50%; background:var(--terracotta); opacity:.35;
+  animation:dictationPulse 1.1s ease-in-out infinite;
+}
+.dictation-dot:nth-child(2){ animation-delay:.15s; }
+.dictation-dot:nth-child(3){ animation-delay:.3s; }
+@keyframes dictationPulse{
+  0%,100%{ opacity:.3; transform:scale(1); }
+  50%{ opacity:1; transform:scale(1.3); }
+}
+.event-create-panel{ margin-bottom:12px; }
+
+/* ---------- botón de retorno a pantalla principal ---------- */
+.return-btn{
+  position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:50%;
+  border:1px solid var(--line); background:var(--ink-2); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:border-color .2s;
+}
+.return-btn::after{
+  content:""; position:absolute; right:-4px; bottom:-4px; width:13px; height:13px; color:var(--gold-dim); opacity:.75;
+  animation:rotateSlow 8s linear infinite;
+  -webkit-mask-image:var(--gear-mask); mask-image:var(--gear-mask);
+  -webkit-mask-size:contain; mask-size:contain; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  background-color:currentColor;
+}
+.return-btn svg{ width:15px; height:15px; stroke:var(--parchment-dim); fill:none; stroke-width:1.3; }
+.return-btn:active{ border-color:var(--accent); }
+.return-btn:active svg{ stroke:var(--accent); }
+
+.splash-enter{
+  position:relative; display:block; width:fit-content; margin:26px auto 0;
+  background:radial-gradient(circle at 30% 25%, #e6bd6c, var(--accent) 75%); color:var(--ink);
+  border:1.5px solid var(--gold-dim); padding:11px 24px 11px 30px;
+  clip-path: polygon(9% 0%, 91% 0%, 100% 50%, 91% 100%, 9% 100%, 0% 50%);
+  font-family:'Space Mono', monospace; font-size:11px; letter-spacing:1.2px; cursor:pointer;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,.4), inset 0 -3px 5px rgba(0,0,0,.25), 0 3px 8px rgba(0,0,0,.3);
+}
+.splash-enter::before{
+  content:""; position:absolute; left:12px; top:50%; transform:translateY(-50%);
+  width:12px; height:12px; color:rgba(0,0,0,.42); opacity:.6;
+  animation:rotateSlow 3.2s linear infinite;
+  -webkit-mask-image:var(--gear-mask); mask-image:var(--gear-mask);
+  -webkit-mask-size:contain; mask-size:contain; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  background-color:currentColor;
+}
+.splash-enter:active::before{ animation-duration:.5s; }
+/* ---------- papel de cuaderno unificado: mismo estilo que el diario de Da Vinci ---------- */
+/* renglón de 26px; el texto se apoya SOBRE la línea, no encima de ella */
+textarea, input[type=text], input[type=date], input[type=time], select{
+  width:100%; color:var(--parchment);
+  border:1.5px solid var(--gold-dim); border-radius:6px;
+  padding:9px 12px 9px 26px;
+  font-family:'EB Garamond', serif; font-size:15px; line-height:26px; resize:none;
+  background-color:var(--ink-2);
+  background-image:
+    linear-gradient(to right, transparent 13px, rgba(181,83,60,.28) 13px, rgba(181,83,60,.28) 14px, transparent 14px),
+    repeating-linear-gradient(to bottom, transparent 0 25px, var(--line) 25px 26px);
+  background-position: 0 0, 0 8px;
+  background-repeat: repeat-y, repeat;
+  background-attachment: local, local;
+  box-shadow: inset 0 0 24px rgba(0,0,0,.22);
+}
+/* campos de una sola línea: conservan el marco y el margen, sin renglones */
+input[type=text], input[type=date], input[type=time], select{
+  background-image:linear-gradient(to right, transparent 13px, rgba(181,83,60,.28) 13px, rgba(181,83,60,.28) 14px, transparent 14px);
+  background-repeat:repeat-y;
+}
+textarea:focus, input:focus, select:focus{ outline:none; border-color:var(--accent); }
+
+/* la nota guardada se lee como una hoja escrita, con el mismo papel */
+.note-item .note-text{
+  line-height:26px; padding:0 0 2px 0;
+  background-image:repeating-linear-gradient(to bottom, transparent 0 25px, var(--line) 25px 26px);
+  background-position:0 -1px;
+}
+
+/* taller de poemas: misma hoja */
+#poemEditor{
+  border:1.5px solid var(--gold-dim); border-radius:6px; padding-left:26px;
+  background-color:var(--ink-2);
+  background-image:linear-gradient(to right, transparent 13px, rgba(181,83,60,.28) 13px, rgba(181,83,60,.28) 14px, transparent 14px);
+  background-repeat:repeat-y;
+}
+#poemEditor .verse-line input{
+  background-image:none; border:none; border-bottom:1px solid var(--line);
+  border-radius:0; padding-left:4px; box-shadow:none; background-color:transparent;
+}
+.row{ display:flex; gap:8px; align-items:center; }
+.row.wrap{ flex-wrap:wrap; }
+.tag{
+  font-family:'Space Mono', monospace; font-size:9px; color:var(--ink); background:var(--sepia);
+  padding:2px 7px; border-radius:8px;
+}
+
+/* ---------- FAB ---------- */
+.fab{
+  position:fixed; right:18px; bottom:78px; z-index:6; width:52px; height:52px; border-radius:50%;
+  background:var(--accent); color:var(--ink); border:none; box-shadow:var(--shadow);
+  display:flex; align-items:center; justify-content:center; font-size:26px; cursor:pointer;
+}
+.fab.mic.recording{ background:var(--terracotta); animation:pulseMic 1s infinite; }
+@keyframes pulseMic{ 0%,100%{box-shadow:0 0 0 0 rgba(181,83,60,.5);} 50%{box-shadow:0 0 0 10px rgba(181,83,60,0);} }
+
+/* ---------- modal ---------- */
+.modal-bg{
+  position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:20; display:none; align-items:flex-end;
+}
+.modal-bg.show{ display:flex; }
+.modal{
+  background:var(--ink-2); border-top:1px solid var(--line); border-radius:20px 20px 0 0;
+  width:100%; padding:18px 16px calc(18px + env(safe-area-inset-bottom)); max-height:85vh; overflow-y:auto;
+  animation:slideUp .25s ease;
+}
+@keyframes slideUp{ from{transform:translateY(30px); opacity:0;} to{transform:none; opacity:1;} }
+.modal h3{ font-family:'Cormorant Garamond', serif; font-size:19px; margin:0 0 12px; }
+.modal .close{ float:right; background:none; border:none; color:var(--parchment-dim); font-size:20px; cursor:pointer; }
+
+/* ---------- notes list ---------- */
+.note-item{ display:flex; gap:10px; align-items:flex-start; }
+.note-color-bar{ width:4px; align-self:stretch; border-radius:4px; flex-shrink:0; }
+.note-text{ flex:1; font-size:14.5px; line-height:1.45; white-space:pre-wrap; }
+.note-meta{ font-family:'Space Mono', monospace; font-size:9px; color:var(--parchment-dim); margin-top:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+.note-del{ background:none; border:none; color:var(--parchment-dim); font-size:16px; cursor:pointer; padding:2px 4px; }
+
+/* ---------- calendar ---------- */
+.cal-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.cal-head .navbtn{
+  background:var(--ink); border:1px solid var(--line); border-radius:50%; color:var(--accent);
+  font-size:22px; cursor:pointer; width:40px; height:40px; display:flex; align-items:center; justify-content:center;
+  padding:0; line-height:1; transition:border-color .15s;
+}
+.cal-head .navbtn:active{ border-color:var(--accent); }
+.cal-head .month-label{ font-family:'Cormorant Garamond', serif; font-size:17px; font-weight:600; text-transform:capitalize;}
+.cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center; }
+.cal-dow{ font-family:'Space Mono', monospace; font-size:9px; color:var(--parchment-dim); padding-bottom:4px; }
+.cal-day{
+  aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border-radius:8px; font-size:13px; cursor:pointer; position:relative; color:var(--parchment);
+  border:1px solid transparent;
+}
+.cal-day.other{ color:var(--parchment-dim); opacity:.35; }
+.cal-day.today{ border-color:var(--accent); }
+.cal-day.selected{ background:var(--accent); color:var(--ink); font-weight:700; }
+.cal-day .dot{ width:4px; height:4px; border-radius:50%; background:var(--sage); margin-top:2px; }
+.cal-day.selected .dot{ background:var(--ink); }
+.agenda-item{ display:flex; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); }
+.agenda-item.done{ opacity:.5; }
+.agenda-item.done .agenda-title{ text-decoration:line-through; }
+.task-check{
+  width:24px; height:24px; border-radius:50%; border:1.5px solid var(--line); background:var(--ink);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; padding:0;
+  transition:border-color .15s, background .15s, transform .15s;
+}
+.task-check svg{ width:13px; height:13px; stroke:var(--parchment-dim); fill:none; stroke-width:2.5; opacity:0; transition:opacity .15s; }
+.task-check.checked{ border-color:var(--sage); background:var(--sage); transform:scale(1.05); }
+.task-check.checked svg{ stroke:var(--ink); opacity:1; }
+.agenda-time{ font-family:'Space Mono', monospace; font-size:10.5px; color:var(--accent); width:76px; flex-shrink:0; }
+.agenda-title{ flex:1; font-size:14.5px; }
+.alarm-badge{ color:var(--terracotta); font-size:14px; }
+
+/* ---------- ideas board ---------- */
+.idea-board{ display:flex; flex-direction:column; gap:10px; }
+.idea-card{
+  border-radius:6px; padding:14px 14px 14px 26px; position:relative;
+  border:1.5px solid var(--gold-dim);
+  transform:rotate(var(--r,0deg));
+  background-image:
+    linear-gradient(to right, transparent 13px, rgba(181,83,60,.28) 13px, rgba(181,83,60,.28) 14px, transparent 14px),
+    repeating-linear-gradient(to bottom, transparent 0 25px, var(--line) 25px 26px);
+  background-position: 0 0, 0 10px;
+  background-repeat: repeat-y, repeat;
+}
+.idea-card .idea-txt{ line-height:26px; }
+.idea-card::before{
+  content:""; position:absolute; top:10px; right:10px; width:13px; height:13px; color:var(--gold-dim); opacity:.55;
+  animation:rotateSlow 7s linear infinite;
+  -webkit-mask-image:var(--gear-mask); mask-image:var(--gear-mask);
+  -webkit-mask-size:contain; mask-size:contain; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  background-color:currentColor;
+}
+.idea-card .idea-txt{ font-size:14.5px; }
+.idea-card .idea-tag{ margin-top:8px; }
+.spark-btn{
+  display:flex; align-items:center; gap:12px; width:fit-content; max-width:100%; margin:0 auto 14px;
+  background:linear-gradient(135deg, var(--ink-3), var(--ink-2)); border:1.5px dashed var(--gold-dim);
+  color:var(--accent); padding:11px 22px 11px 16px; border-radius:12px; font-family:'Cormorant Garamond', serif; font-size:15px;
+  cursor:pointer; text-align:left;
+}
+.dice-icon{ width:32px; height:32px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.dice-icon svg{ width:100%; height:100%; stroke:var(--gold-dim); fill:none; stroke-width:1.3; transition:stroke .2s; }
+.spark-btn:hover .dice-icon svg{ stroke:var(--accent); }
+.dice-icon.rolling{ animation:diceRoll .65s ease; }
+.dice-icon.flicker{ animation:candleFlicker .5s ease; }
+@keyframes candleFlicker{
+  0%,100%{ opacity:1; transform:scale(1); }
+  30%{ opacity:.6; transform:scale(0.92) rotate(-3deg); }
+  60%{ opacity:1; transform:scale(1.08) rotate(2deg); }
+}
+.candle-flame{
+  transform-box:fill-box; transform-origin:50% 100%;
+  animation:flameIdle 1.8s ease-in-out infinite;
+}
+@keyframes flameIdle{
+  0%,100%{ opacity:1; transform:scale(1) rotate(0deg); }
+  25%{ opacity:.82; transform:scale(0.94) rotate(-3deg); }
+  50%{ opacity:1; transform:scale(1.06) rotate(2deg); }
+  75%{ opacity:.9; transform:scale(0.97) rotate(-1deg); }
+}
+.jar-spark{
+  fill:var(--gold-dim); transform-box:fill-box; transform-origin:center;
+  animation:sparkGlow 1.6s ease-in-out infinite;
+}
+@keyframes sparkGlow{
+  0%,100%{ opacity:.55; transform:scale(1); }
+  50%{ opacity:1; transform:scale(1.2); }
+}
+.dice-reroll-btn{
+  display:flex; align-items:center; gap:8px; width:fit-content; margin:0 auto 12px;
+  background:var(--ink-3); border:1.5px dashed var(--gold-dim); color:var(--accent);
+  padding:7px 16px 7px 8px; border-radius:20px; font-family:'Space Mono', monospace; font-size:10.5px;
+  letter-spacing:.3px; cursor:pointer;
+}
+.dice-reroll-btn .dice-icon{ width:22px; height:22px; }
+.idea-capture-btn{
+  display:flex; align-items:center; gap:12px; width:fit-content; max-width:100%; margin:0 auto 14px;
+  background:var(--ink-3); border:1.5px dashed var(--line); color:var(--parchment);
+  padding:11px 20px 11px 14px; border-radius:12px; font-family:'EB Garamond', serif; font-size:14px; cursor:pointer;
+  text-align:left;
+}
+.idea-capture-btn .dice-icon svg{ stroke:var(--parchment-dim); }
+.idea-capture-btn:hover .dice-icon svg{ stroke:var(--accent); }
+@keyframes diceRoll{
+  0%{ transform:rotate(0deg) scale(1); }
+  35%{ transform:rotate(160deg) scale(1.18); }
+  65%{ transform:rotate(300deg) scale(0.92); }
+  100%{ transform:rotate(360deg) scale(1); }
+}
+.spark-caption{ font-size:9.5px; opacity:.65; font-family:'Space Mono', monospace; letter-spacing:.4px; font-style:normal; display:block; margin-top:2px; }
+
+/* ---------- poems ---------- */
+.template-scroll{ display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:12px; }
+.template-scroll::-webkit-scrollbar{ display:none; }
+.tpl-chip{
+  flex-shrink:0; padding:8px 14px 8px 24px; border-radius:20px; border:1px dashed var(--line); background:var(--ink-2);
+  font-family:'Space Mono', monospace; font-size:10.5px; color:var(--parchment-dim); cursor:pointer; white-space:nowrap;
+  position:relative;
+}
+.tpl-chip::before{
+  content:""; position:absolute; left:8px; top:50%; transform:translateY(-50%);
+  width:9px; height:9px; color:var(--parchment-dim); opacity:.45;
+  animation:rotateSlow 6s linear infinite;
+  -webkit-mask-image:var(--gear-mask); mask-image:var(--gear-mask);
+  -webkit-mask-size:contain; mask-size:contain; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  background-color:currentColor;
+}
+.tpl-chip.active{ background:var(--accent); color:var(--ink); border-color:var(--accent); }
+.tpl-chip.active::before{ color:rgba(0,0,0,.45); opacity:.6; animation-duration:2.5s; }
+.stanza{ margin-bottom:14px; }
+.stanza-label{ font-family:'Space Mono', monospace; font-size:9px; color:var(--sepia); margin-bottom:4px; display:flex; justify-content:space-between;}
+.verse-line{ display:flex; gap:8px; align-items:center; margin-bottom:6px; }
+.verse-line input{ flex:1; }
+.syll-count{ font-family:'Space Mono', monospace; font-size:10px; color:var(--parchment-dim); width:26px; text-align:center; flex-shrink:0;}
+.rhyme-letter{ font-family:'Space Mono', monospace; font-size:11px; color:var(--accent); width:16px; text-align:center; flex-shrink:0; font-weight:700;}
+
+/* ---------- home dashboard ---------- */
+.living-archive{
+  border:1px solid var(--gold-dim); background:linear-gradient(135deg, rgba(201,154,63,.06), transparent);
+  border-radius:14px; padding:14px; margin-bottom:14px;
+}
+.living-archive .lab-eyebrow{ font-family:'Space Mono', monospace; font-size:9px; color:var(--gold-dim); letter-spacing:1px; margin-bottom:6px;}
+.stat-row{ display:flex; gap:8px; margin-bottom:14px; }
+.stat{ flex:1; background:var(--ink-2); border:1px solid var(--line); border-radius:12px; padding:12px 8px; text-align:center; }
+.stat .num{ font-family:'Cormorant Garamond', serif; font-size:22px; color:var(--accent); font-weight:700; }
+.stat .lab{ font-family:'Space Mono', monospace; font-size:8.5px; color:var(--parchment-dim); margin-top:2px; }
+.stat-icon{ width:16px; height:16px; stroke:var(--gold-dim); fill:none; stroke-width:1.4; margin-bottom:4px; opacity:.8; }
+
+/* ---------- saludo + fecha ---------- */
+.greeting-block{ margin-bottom:16px; }
+.greeting-text{ font-family:'Cormorant Garamond', serif; font-size:24px; font-weight:600; color:var(--parchment); }
+.greeting-date{ font-family:'Space Mono', monospace; font-size:10.5px; color:var(--gold-dim); letter-spacing:.5px; margin-top:3px; text-transform:capitalize; }
+
+/* ---------- medidor circular de progreso del día ---------- */
+.progress-gauge-row{ display:flex; align-items:center; gap:16px; margin-bottom:16px; background:var(--ink-2); border:1px solid var(--line); border-radius:14px; padding:12px 16px; }
+.progress-gauge{ position:relative; width:66px; height:66px; flex-shrink:0; }
+.gauge-svg{ width:100%; height:100%; transform:rotate(-90deg); }
+.gauge-track{ fill:none; stroke:var(--ink-3); stroke-width:8; }
+.gauge-fill{ fill:none; stroke:var(--accent); stroke-width:8; stroke-linecap:round; stroke-dasharray:264; stroke-dashoffset:264; transition:stroke-dashoffset .5s ease; }
+.gauge-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.gauge-num{ font-family:'Space Mono', monospace; font-size:13px; color:var(--parchment); font-weight:700; }
+.gauge-lab{ font-family:'Space Mono', monospace; font-size:7px; color:var(--parchment-dim); text-transform:uppercase; }
+.gauge-caption{ font-size:12.5px; color:var(--parchment-dim); line-height:1.4; flex:1; }
+
+/* ---------- buscador de notas ---------- */
+.notes-search-row{ margin-bottom:10px; }
+.notes-search-box{
+  display:flex; align-items:center; gap:8px; background:var(--ink-2); border:1.5px dashed var(--line);
+  border-radius:20px; padding:9px 14px;
+}
+.notes-search-box svg{ width:15px; height:15px; stroke:var(--parchment-dim); fill:none; stroke-width:1.6; flex-shrink:0; }
+.notes-search-box input{
+  border:none; background:none; background-image:none; box-shadow:none; padding:0;
+  font-size:13.5px; color:var(--parchment); flex:1; line-height:normal;
+}
+.notes-search-box input:focus{ outline:none; }
+.filter-chip{
+  padding:5px 12px; border-radius:14px; border:1px dashed var(--line); background:var(--ink-3);
+  color:var(--parchment-dim); font-family:'Space Mono', monospace; font-size:9.5px; cursor:pointer;
+}
+.filter-chip.active{ border-style:solid; }
+
+/* ---------- secret codex (easter egg) ---------- */
+/* ---------- pantalla de la llave (27 toques en la firma) ---------- */
+.key-overlay{
+  position:fixed; inset:0; z-index:220; background:var(--ink); display:none;
+  flex-direction:column; align-items:center; justify-content:center; padding:30px; text-align:center;
+}
+.key-overlay.show{ display:flex; animation:keyFadeIn .8s ease; }
+@keyframes keyFadeIn{ from{opacity:0;} to{opacity:1;} }
+.key-art{
+  width:110px; height:230px; margin-bottom:20px; position:relative;
+  animation:keyRise 1.2s cubic-bezier(.2,.7,.3,1), keyFloat 5.5s ease-in-out 1.2s infinite;
+}
+/* aura: resplandor que respira detrás de la llave */
+.key-art::before{
+  content:""; position:absolute; left:50%; top:16%; width:190px; height:190px; margin:-95px 0 0 -95px;
+  border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle, rgba(201,154,63,.30) 0%, rgba(201,154,63,.12) 42%, transparent 70%);
+  animation:auraBreathe 4s ease-in-out infinite;
+}
+/* anillo de luz que se expande hacia afuera, como si la cerradura liberara energía */
+.key-art::after{
+  content:""; position:absolute; left:50%; top:16%; width:120px; height:120px; margin:-60px 0 0 -60px;
+  border-radius:50%; border:1px solid var(--accent); opacity:0; pointer-events:none;
+  animation:auraRipple 4s ease-out infinite;
+}
+@keyframes auraBreathe{
+  0%,100%{ transform:scale(1); opacity:.75; }
+  50%{ transform:scale(1.14); opacity:1; }
+}
+@keyframes auraRipple{
+  0%{ transform:scale(.7); opacity:.55; }
+  70%{ transform:scale(1.7); opacity:0; }
+  100%{ transform:scale(1.7); opacity:0; }
+}
+/* la llave flota y gira apenas, como suspendida en el aire */
+@keyframes keyFloat{
+  0%,100%{ transform:translateY(0) rotate(0deg); }
+  25%{ transform:translateY(-7px) rotate(-2.5deg); }
+  50%{ transform:translateY(-10px) rotate(0deg); }
+  75%{ transform:translateY(-7px) rotate(2.5deg); }
+}
+@keyframes keyRise{
+  0%{ transform:translateY(28px) rotate(-8deg); opacity:0; }
+  60%{ opacity:1; }
+  100%{ transform:none; opacity:1; }
+}
+.key-art svg{ width:100%; height:100%; overflow:visible; position:relative; z-index:1; }
+.key-ring, .key-ring-inner{ fill:none; stroke:var(--accent); stroke-width:3; }
+.key-ring-inner{ stroke-width:1.5; stroke-dasharray:5 4; opacity:.6; transform-origin:60px 46px; animation:rotateSlow 24s linear infinite; }
+.key-arm, .key-shaft, .key-teeth{ fill:none; stroke:var(--accent); stroke-width:4; stroke-linecap:round; stroke-linejoin:round; }
+.key-arm{ stroke-width:2.5; }
+.key-pivot, .key-tip{ fill:var(--accent); }
+.key-art svg > *{ filter:drop-shadow(0 0 6px rgba(201,154,63,.35)); }
+.key-title{
+  font-family:'Cormorant Garamond', serif; font-size:26px; font-weight:700; color:var(--accent);
+  letter-spacing:.5px; margin-bottom:14px;
+}
+.key-quote{ font-style:italic; font-size:14px; color:var(--parchment); max-width:330px; line-height:1.55; margin:0 0 14px; }
+.key-quote span{ font-style:normal; font-family:'Space Mono', monospace; font-size:10px; color:var(--gold-dim); }
+.key-note{ font-size:12px; color:var(--parchment-dim); max-width:320px; line-height:1.5; margin:0 0 24px; }
+
+.secret-overlay{
+  position:fixed; inset:0; z-index:210; background:var(--ink); display:none; flex-direction:column;
+  align-items:center; justify-content:center; padding:30px; text-align:center;
+}
+.secret-overlay.show{ display:flex; }
+.codex-book{ width:100%; max-width:400px; display:flex; flex-direction:column; align-items:center; }
+.codex-tabs{ display:flex; flex-wrap:wrap; gap:5px; justify-content:center; margin-bottom:10px; }
+.codex-tab{
+  padding:5px 11px; border-radius:12px 12px 0 0; border:1px dashed var(--line); border-bottom:none;
+  background:var(--ink-3); color:var(--parchment-dim); font-family:'Space Mono', monospace; font-size:9px;
+  cursor:pointer; letter-spacing:.3px;
+}
+.codex-tab.active{ background:var(--accent); color:var(--ink); border-color:var(--accent); font-weight:700; }
+.codex-page{
+  width:100%; min-height:212px; background:var(--ink-2); border:1.5px solid var(--gold-dim); border-radius:6px;
+  padding:18px 20px 18px 26px; text-align:left; position:relative; overflow:hidden;
+  box-shadow: inset 0 0 34px rgba(0,0,0,.28), 0 4px 14px rgba(0,0,0,.3);
+  display:flex; flex-direction:column; justify-content:center;
+  background-image:linear-gradient(to right, transparent 13px, rgba(181,83,60,.28) 13px, rgba(181,83,60,.28) 14px, transparent 14px);
+  background-repeat:repeat-y;
+}
+/* renglones tenues de fondo */
+.codex-page::before{
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:.5;
+  background:repeating-linear-gradient(to bottom, transparent 0 25px, var(--line) 25px 26px);
+}
+.codex-page.turning{ animation:pageTurn .4s ease; }
+@keyframes pageTurn{
+  0%{ transform:rotateY(0deg); opacity:1; }
+  45%{ transform:rotateY(-14deg) translateX(-8px); opacity:.35; }
+  100%{ transform:rotateY(0deg); opacity:1; }
+}
+.codex-page-kind{
+  font-family:'Space Mono', monospace; font-size:8.5px; letter-spacing:1.2px; color:var(--gold-dim);
+  text-transform:uppercase; margin-bottom:10px; position:relative; z-index:1;
+}
+.codex-page-body{
+  font-family:'EB Garamond', serif; font-size:14.5px; line-height:26px; color:var(--parchment);
+  position:relative; z-index:1; padding-left:0;
+}
+.codex-page-body .verse{ font-style:italic; display:block; }
+.codex-page-body cite{ display:block; margin-top:10px; font-size:10px; font-family:'Space Mono', monospace; color:var(--gold-dim); font-style:normal; }
+.codex-nav{ display:flex; align-items:center; justify-content:center; gap:16px; margin-top:12px; }
+.codex-arrow{
+  width:38px; height:38px; border-radius:50%; border:1px solid var(--line); background:var(--ink);
+  color:var(--accent); font-size:20px; cursor:pointer; line-height:1; display:flex; align-items:center; justify-content:center;
+}
+.codex-arrow:active{ border-color:var(--accent); }
+.codex-folio{ font-family:'Space Mono', monospace; font-size:9.5px; color:var(--parchment-dim); letter-spacing:.5px; }
+.secret-overlay .mirror{ transform:scaleX(-1); font-family:'Cormorant Garamond', serif; font-size:19px; margin-bottom:18px; color:var(--accent); }
+@keyframes shake{ 0%,100%{transform:translateX(0);} 25%{transform:translateX(-3px);} 75%{transform:translateX(3px);} }
+@keyframes eggpulse{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
+.logo.shake, .splash-byline.shake{ animation:shake .3s ease; }
+.logo.pulse, .splash-byline.pulse{ animation:eggpulse .4s ease; }
+.splash-byline{ cursor:pointer; user-select:none; }
+
+.toast{
+  position:fixed; top:14px; left:50%; transform:translateX(-50%) translateY(-40px); z-index:300;
+  background:var(--ink-3); border:1px solid var(--accent); color:var(--parchment); padding:9px 16px;
+  border-radius:20px; font-size:12.5px; opacity:0; transition:all .3s ease; pointer-events:none;
+}
+.toast.show{ transform:translateX(-50%) translateY(0); opacity:1; }
+</style>
+</head>
+<body>
+
+<div class="splash" id="splashScreen">
+  <div class="splash-logo app-icon-square">
+    <svg viewBox="0 0 200 200" class="compass-logo" aria-hidden="true">
+      <path class="wave-line w1" d="M15,150 Q45,130 75,150 T135,150 T195,150"/>
+      <path class="wave-line w2" d="M5,168 Q40,150 75,168 T145,168 T200,168"/>
+      <g class="vortex-group">
+        <path class="vortex-arm" d="M100,100 Q118,92 122,74 Q124,62 112,55"/>
+        <path class="vortex-arm" d="M100,100 Q118,92 122,74 Q124,62 112,55" transform="rotate(120 100 100)"/>
+        <path class="vortex-arm" d="M100,100 Q118,92 122,74 Q124,62 112,55" transform="rotate(240 100 100)"/>
+      </g>
+      <circle class="compass-circle" cx="100" cy="100" r="68"/>
+      <g class="arm2"><line x1="100" y1="40" x2="62" y2="152"/></g>
+      <g class="arm"><line x1="100" y1="40" x2="100" y2="168"/><circle class="tip" cx="100" cy="168" r="3.5"/></g>
+      <circle class="pivot" cx="100" cy="40" r="4.5"/>
+    </svg>
+  </div>
+  <div class="splash-name"><span class="x">X</span><span class="c">-C</span>odex Note<span class="pro-badge">PRO</span></div>
+  <div class="splash-quote">"La sabiduría es hija de la experiencia."<br>— Leonardo da Vinci</div>
+  <div class="splash-byline" id="bylineTap">by <span class="x">X</span>anibal <span class="l">L</span>iar</div>
+  <div class="splash-version">v.0.1.0</div>
+  <button class="splash-enter" id="splashEnterBtn">Entrar al cuaderno</button>
+</div>
+
+<div class="app">
+  <canvas id="bg-canvas"></canvas>
+  <svg class="bg-strokes" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <path class="sketch-path p1" d="M10,140 C120,50 270,220 390,90"/>
+    <path class="sketch-path p2" d="M-10,410 C110,330 250,490 420,390"/>
+    <path class="sketch-path p3" d="M30,660 C150,600 260,710 390,650"/>
+    <circle class="sketch-circle" cx="335" cy="150" r="55"/>
+    <circle class="sketch-circle c2" cx="65" cy="610" r="75"/>
+  </svg>
+
+  <header class="top">
+    <button class="return-btn" id="returnSplashBtn" title="Volver a la pantalla principal">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><line x1="12" y1="5" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="19"/><line x1="5" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <button class="return-btn" id="themeSettingsBtn" title="Tema y colores" style="left:14px; right:auto;">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.5 1.5M7.1 16.9l-1.5 1.5M18.4 18.4l-1.5-1.5M7.1 7.1L5.6 5.6"/></svg>
+    </button>
+    <div class="logo" id="logoTap">
+      <span class="logo-icon app-icon-square"><svg viewBox="0 0 200 200" class="compass-logo" aria-hidden="true">
+        <path class="wave-line w1" d="M15,150 Q45,130 75,150 T135,150 T195,150"/>
+        <path class="wave-line w2" d="M5,168 Q40,150 75,168 T145,168 T200,168"/>
+        <g class="vortex-group">
+          <path class="vortex-arm" d="M100,100 Q118,92 122,74 Q124,62 112,55"/>
+          <path class="vortex-arm" d="M100,100 Q118,92 122,74 Q124,62 112,55" transform="rotate(120 100 100)"/>
+          <path class="vortex-arm" d="M100,100 Q118,92 122,74 Q124,62 112,55" transform="rotate(240 100 100)"/>
+        </g>
+        <circle class="compass-circle" cx="100" cy="100" r="68"/>
+        <g class="arm2"><line x1="100" y1="40" x2="62" y2="152"/></g>
+        <g class="arm"><line x1="100" y1="40" x2="100" y2="168"/><circle class="tip" cx="100" cy="168" r="3.5"/></g>
+        <circle class="pivot" cx="100" cy="40" r="4.5"/>
+      </svg></span>
+      <span class="x">X</span><span class="c">-C</span><span class="rest">odex Note</span><span class="pro-badge">PRO</span>
+    </div>
+    <div class="quote">"La sabiduría es hija de la experiencia." — Leonardo da Vinci</div>
+  </header>
+
+  <main>
+
+    <!-- HOME / DASHBOARD -->
+    <section class="view active" data-view="home">
+      <div class="greeting-block">
+        <div class="greeting-text" id="greetingText">Buenos días</div>
+        <div class="greeting-date" id="greetingDate"></div>
+      </div>
+
+      <div class="progress-gauge-row">
+        <div class="progress-gauge">
+          <svg viewBox="0 0 100 100" class="gauge-svg">
+            <circle cx="50" cy="50" r="42" class="gauge-track"/>
+            <circle cx="50" cy="50" r="42" class="gauge-fill" id="gaugeFill"/>
+          </svg>
+          <div class="gauge-center">
+            <div class="gauge-num" id="gaugeNum">0/0</div>
+            <div class="gauge-lab">hoy</div>
+          </div>
+        </div>
+        <div class="gauge-caption" id="gaugeCaption">Nada agendado todavía</div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat">
+          <svg class="stat-icon" viewBox="0 0 24 24"><path d="M20 4c-6.5 0-13 4.5-15 13l-2 4 4-2C15 17 20 10.5 20 4z"/></svg>
+          <div class="num" id="statNotes">0</div><div class="lab">NOTAS</div>
+        </div>
+        <div class="stat">
+          <svg class="stat-icon" viewBox="0 0 24 24"><path d="M2.5 15.5c4-1.5 6.5-7 10-9 .8 2.8-1.2 5.8-3.3 6.8 3 .3 6.3-1.5 8.3-5.3 1.2 3.8-1 8-5 9.8-3 1.3-7 .8-10-2.3z"/></svg>
+          <div class="num" id="statIdeas">0</div><div class="lab">IDEAS</div>
+        </div>
+        <div class="stat">
+          <svg class="stat-icon" viewBox="0 0 24 24"><path d="M6 4c-1.4 0-2.5 1-2.5 2.4S4.6 8.8 6 8.8M18 19.6c1.4 0 2.5-1 2.5-2.4S19.4 14.8 18 14.8"/><path d="M6 4h12M6 8.8v8.4a2.4 2.4 0 0 0 2.4 2.4H18"/></svg>
+          <div class="num" id="statPoems">0</div><div class="lab">POEMAS</div>
+        </div>
+        <div class="stat">
+          <svg class="stat-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+          <div class="num" id="statToday">0</div><div class="lab">AGENDA HOY</div>
+        </div>
+      </div>
+
+      <div class="living-archive" id="archiveBox" style="display:none;">
+        <div class="lab-eyebrow">◈ EL ARCHIVO VIVO</div>
+        <div id="archiveText" style="font-size:13.5px; line-height:1.4;"></div>
+      </div>
+
+      <h2 class="section-title">Agenda de hoy <span class="rule"></span></h2>
+      <div id="homeAgenda"></div>
+    </section>
+
+    <!-- NOTAS -->
+    <section class="view" data-view="notas">
+      <h2 class="section-title">Notas <span class="rule"></span></h2>
+      <div class="notes-search-row">
+        <div class="notes-search-box">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.2" y2="16.2"/></svg>
+          <input type="text" id="notesSearch" placeholder="Buscar en tus notas...">
+        </div>
+      </div>
+      <div class="row wrap" id="notesFilterChips" style="gap:6px; margin-bottom:10px;"></div>
+      <div id="notesList"></div>
+    </section>
+
+    <!-- CALENDARIO -->
+    <section class="view" data-view="calendario">
+      <h2 class="section-title">Calendario y horario <span class="rule"></span></h2>
+      <div class="card">
+        <div class="cal-head">
+          <button class="navbtn" id="calPrev">‹</button>
+          <div class="month-label" id="calMonthLabel"></div>
+          <button class="navbtn" id="calNext">›</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+      <h2 class="section-title" id="agendaDayLabel">Agenda <span class="rule"></span></h2>
+      <div class="row" style="gap:8px; justify-content:center; margin-bottom:4px;">
+        <button class="pill" id="addEventChoiceBtn" style="margin:0;">＋ Nota / evento</button>
+        <button class="pill" id="addRoutineChoiceBtn" style="margin:0;">🔁 Nueva rutina</button>
+      </div>
+      <div class="event-create-panel" id="eventCreatePanel" style="display:none;">
+        <input type="text" id="eventTitle" placeholder="¿Qué vas a hacer?">
+        <div class="ribbon-label">EMPIEZA</div>
+        <div class="time-ribbon-wrap">
+          <div class="time-ribbon-display" id="eventRibbonDisplay">--:--</div>
+          <div class="time-ribbon-track">
+            <div class="time-ribbon-center-marker"></div>
+            <div class="time-ribbon-scroll" id="eventTimeDial"></div>
+          </div>
+        </div>
+        <div class="row wrap" id="eventDurationChips" style="justify-content:center; gap:6px; margin:8px 0 4px;"></div>
+        <div class="ribbon-label">TERMINA</div>
+        <div class="time-ribbon-wrap">
+          <div class="time-ribbon-display" id="eventEndRibbonDisplay">--:--</div>
+          <div class="time-ribbon-track">
+            <div class="time-ribbon-center-marker"></div>
+            <div class="time-ribbon-scroll" id="eventEndTimeDial"></div>
+          </div>
+        </div>
+        <div class="row" style="justify-content:flex-start; align-items:center; gap:10px; margin-bottom:10px;">
+          <div class="lever on" id="eventAlarmLever"><div class="knob"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="5.6" y1="5.6" x2="7.4" y2="7.4"/><line x1="16.6" y1="16.6" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="16.6" y2="7.4"/><line x1="7.4" y1="16.6" x2="5.6" y2="18.4"/></svg></div></div>
+          <span style="font-size:12px; color:var(--parchment-dim);">Avisarme con alarma</span>
+        </div>
+        <div class="color-picker-label" style="margin-top:0;">Tu día hasta ahora</div>
+        <div class="inline-preview" id="eventInlinePreview"></div>
+        <button class="pill gold" id="saveEventBtn">Guardar en <span id="eventDayLabel"></span></button>
+        <div class="ribbon-hint-small">se guarda y queda listo para agregar la siguiente actividad</div>
+      </div>
+      <div class="event-create-panel" id="routineCreatePanel" style="display:none;">
+        <input type="text" id="routineTitle" placeholder="¿Qué rutina vas a repetir?">
+        <div class="ribbon-label">EMPIEZA</div>
+        <div class="time-ribbon-wrap">
+          <div class="time-ribbon-display" id="routineRibbonDisplay">--:--</div>
+          <div class="time-ribbon-track">
+            <div class="time-ribbon-center-marker"></div>
+            <div class="time-ribbon-scroll" id="routineTimeDial"></div>
+          </div>
+        </div>
+        <div class="row wrap" id="routineDurationChips" style="justify-content:center; gap:6px; margin:8px 0 4px;"></div>
+        <div class="ribbon-label">TERMINA</div>
+        <div class="time-ribbon-wrap">
+          <div class="time-ribbon-display" id="routineEndRibbonDisplay">--:--</div>
+          <div class="time-ribbon-track">
+            <div class="time-ribbon-center-marker"></div>
+            <div class="time-ribbon-scroll" id="routineEndTimeDial"></div>
+          </div>
+        </div>
+        <div class="row" style="justify-content:flex-start; align-items:center; gap:10px; margin-bottom:12px;">
+          <div class="lever on" id="routineAlarmLever"><div class="knob"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="5.6" y1="5.6" x2="7.4" y2="7.4"/><line x1="16.6" y1="16.6" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="16.6" y2="7.4"/><line x1="7.4" y1="16.6" x2="5.6" y2="18.4"/></svg></div></div>
+          <span style="font-size:12px; color:var(--parchment-dim);">Avisarme con alarma</span>
+        </div>
+        <div style="text-align:center; margin-bottom:14px;">
+          <div class="color-picker-label" style="margin-top:0;">¿Qué días se repite?</div>
+          <div class="row wrap" id="routineDaysChips" style="justify-content:center; gap:6px; margin-top:8px;"></div>
+        </div>
+        <div class="color-picker-label" style="margin-top:0;">Tu día hasta ahora</div>
+        <div class="inline-preview" id="routineInlinePreview"></div>
+        <button class="pill gold" id="saveRoutineBtn">Guardar rutina</button>
+        <div class="ribbon-hint-small">se guarda y queda listo para agregar la siguiente actividad</div>
+      </div>
+      <h2 class="section-title" style="margin-top:16px;">Tabla del día <span class="rule"></span></h2>
+      <div id="dayAgenda"></div>
+    </section>
+
+    <!-- IDEAS -->
+    <section class="view" data-view="ideas">
+      <h2 class="section-title">Modo Da Vinci <span class="rule"></span></h2>
+      <button class="spark-btn" id="sparkBtn">
+        <span class="dice-icon" id="candleIcon">
+          <svg viewBox="0 0 24 24">
+            <path class="candle-flame" d="M12 2c1.8 2.1 3 4 3 5.6a3 3 0 1 1-6 0C9 6 10.2 4.1 12 2z"/>
+            <line x1="12" y1="7.8" x2="12" y2="10"/>
+            <rect x="9" y="10" width="6" height="10" rx="1"/>
+            <line x1="6.5" y1="20" x2="17.5" y2="20"/>
+          </svg>
+        </span>
+        <span>Generar una chispa<span class="spark-caption">no sé qué anotar, dame una pista</span></span>
+      </button>
+      <div class="idea-board" id="ideasList"></div>
+    </section>
+
+    <!-- PENSAMIENTOS -->
+    <section class="view" data-view="poemas">
+      <h2 class="section-title">Taller de pensamientos <span class="rule"></span></h2>
+      <div class="template-scroll" id="tplScroll">
+        <div class="tpl-chip active" data-tpl="libre">VERSO LIBRE</div>
+        <div class="tpl-chip" data-tpl="haiku">HAIKU 5-7-5</div>
+        <div class="tpl-chip" data-tpl="soneto">SONETO</div>
+        <div class="tpl-chip" data-tpl="copla">COPLA</div>
+        <div class="tpl-chip" data-tpl="acrostico">ACRÓSTICO</div>
+      </div>
+      <button class="dice-reroll-btn" id="poemDiceBtn" style="margin:0 auto 12px;">
+        <span class="dice-icon" id="poemDiceIcon">
+          <svg viewBox="0 0 32 32">
+            <polygon points="16,3 28,11 24,25 8,25 4,11"/>
+            <line x1="16" y1="3" x2="16" y2="18"/><line x1="28" y1="11" x2="16" y2="18"/>
+            <line x1="24" y1="25" x2="16" y2="18"/><line x1="8" y1="25" x2="16" y2="18"/>
+            <line x1="4" y1="11" x2="16" y2="18"/><line x1="16" y1="3" x2="4" y2="11"/>
+            <line x1="16" y1="3" x2="28" y2="11"/>
+          </svg>
+        </span>
+        <span>Tirar el dado · inspiración para este formato</span>
+      </button>
+      <div id="poemTopicBox" style="display:none; text-align:center; font-size:12.5px; font-style:italic; color:var(--parchment-dim); margin:-4px 0 12px;"></div>
+      <div class="card" id="poemEditor"></div>
+      <div class="row" style="margin-top:6px;">
+        <button class="pill gold" id="savePoemBtn">Guardar poema</button>
+      </div>
+      <h2 class="section-title" style="margin-top:18px;">Poemas guardados <span class="rule"></span></h2>
+      <div id="poemsList"></div>
+    </section>
+
+  </main>
+
+  <button class="fab mic" id="micFab" title="Dictar">🎙</button>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-tab="home">
+      <span class="dial"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg></span>
+      <span class="lbl">Hoy</span>
+    </button>
+    <button class="tab-btn" data-tab="notas">
+      <span class="dial"><svg viewBox="0 0 24 24"><path d="M20 4c-6.5 0-13 4.5-15 13l-2 4 4-2C15 17 20 10.5 20 4z"/><path d="M6.5 17.5l3-3M9.5 14.5l3-3M12.5 11.5l3-3"/></svg></span>
+      <span class="lbl">Notas</span>
+    </button>
+    <button class="tab-btn" data-tab="calendario">
+      <span class="dial"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="5.6" y1="5.6" x2="7.4" y2="7.4"/><line x1="16.6" y1="16.6" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="16.6" y2="7.4"/><line x1="7.4" y1="16.6" x2="5.6" y2="18.4"/></svg></span>
+      <span class="lbl">Horario</span>
+    </button>
+    <button class="tab-btn" data-tab="ideas">
+      <span class="dial"><svg viewBox="0 0 24 24"><path d="M2.5 15.5c4-1.5 6.5-7 10-9 .8 2.8-1.2 5.8-3.3 6.8 3 .3 6.3-1.5 8.3-5.3 1.2 3.8-1 8-5 9.8-3 1.3-7 .8-10-2.3z"/></svg></span>
+      <span class="lbl">Ideas</span>
+    </button>
+    <button class="tab-btn" data-tab="poemas">
+      <span class="dial"><svg viewBox="0 0 24 24"><path d="M6 4c-1.4 0-2.5 1-2.5 2.4S4.6 8.8 6 8.8M18 19.6c1.4 0 2.5-1 2.5-2.4S19.4 14.8 18 14.8"/><path d="M6 4h12M6 8.8v8.4a2.4 2.4 0 0 0 2.4 2.4H18"/></svg></span>
+      <span class="lbl">Poemas</span>
+    </button>
+  </nav>
+</div>
+
+<!-- Modal: nueva nota -->
+<div class="modal-bg" id="noteModalBg">
+  <div class="modal">
+    <button class="close" data-close="noteModalBg">×</button>
+    <h3>Nueva nota</h3>
+    <button class="mic-inline-btn" id="noteMicBtn" title="Dictar">
+      <svg viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M6 11a6 6 0 0 0 12 0"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="9" y1="21" x2="15" y2="21"/></svg>
+    </button>
+    <div class="dictation-banner" id="dictationBanner" style="display:none;">
+      <span class="dictation-dot"></span><span class="dictation-dot"></span><span class="dictation-dot"></span>
+      <span>Escuchando…</span>
+    </div>
+    <textarea id="noteInput" rows="5" placeholder="Escribe o dicta tu nota..."></textarea>
+    <button class="pill" id="noteScheduleToggle">📅 Agendar esta nota</button>
+    <div class="mini-cal-wrap" id="noteCalWrap" style="display:none;">
+      <div class="cal-head">
+        <button class="navbtn" id="noteCalPrev">‹</button>
+        <div class="month-label" id="noteCalLabel"></div>
+        <button class="navbtn" id="noteCalNext">›</button>
+      </div>
+      <div class="cal-grid" id="noteCalGrid"></div>
+      <div class="time-ribbon-wrap">
+        <div class="time-ribbon-display" id="noteRibbonDisplay">--:--</div>
+        <div class="time-ribbon-track">
+          <div class="time-ribbon-center-marker"></div>
+          <div class="time-ribbon-scroll" id="noteTimeDial"></div>
+        </div>
+        <div class="time-ribbon-hint">desliza o toca una marca para elegir la hora</div>
+      </div>
+      <div class="row" style="justify-content:flex-start; align-items:center; gap:10px;">
+        <div class="lever on" id="noteAlarmLever"><div class="knob"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="5.6" y1="5.6" x2="7.4" y2="7.4"/><line x1="16.6" y1="16.6" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="16.6" y2="7.4"/><line x1="7.4" y1="16.6" x2="5.6" y2="18.4"/></svg></div></div>
+        <span style="font-size:12px; color:var(--parchment-dim);">Avisarme con alarma</span>
+      </div>
+    </div>
+    <div class="color-picker-label">Categoría</div>
+    <div class="row wrap" style="margin-top:6px;" id="colorPicker">
+      <div class="row wrap" id="colorSwatches" style="gap:8px;"></div>
+    </div>
+    <button class="pill gold" id="saveNoteBtn">Guardar nota</button>
+  </div>
+</div>
+
+<!-- Modal: nueva idea -->
+<div class="modal-bg" id="ideaModalBg">
+  <div class="modal">
+    <button class="close" data-close="ideaModalBg">×</button>
+    <h3>Nueva idea</h3>
+    <button class="dice-reroll-btn" id="diceRerollBtn" title="Otra pregunta">
+      <span class="dice-icon" id="diceIcon">
+        <svg viewBox="0 0 32 32">
+          <polygon points="16,3 28,11 24,25 8,25 4,11"/>
+          <line x1="16" y1="3" x2="16" y2="18"/><line x1="28" y1="11" x2="16" y2="18"/>
+          <line x1="24" y1="25" x2="16" y2="18"/><line x1="8" y1="25" x2="16" y2="18"/>
+          <line x1="4" y1="11" x2="16" y2="18"/><line x1="16" y1="3" x2="4" y2="11"/>
+          <line x1="16" y1="3" x2="28" y2="11"/>
+        </svg>
+      </span>
+      <span>Tirar el dado · otra pregunta</span>
+    </button>
+    <textarea id="ideaInput" rows="4" placeholder="Captura la idea antes de que se escape..."></textarea>
+    <input type="text" id="ideaTag" placeholder="Etiqueta (opcional)" style="margin-top:10px;">
+    <button class="pill gold" id="saveIdeaBtn">Guardar idea</button>
+  </div>
+</div>
+
+<!-- (el evento ahora se crea en línea dentro de la vista de Horario, sin modal) -->
+
+<!-- Alarma disparada -->
+<div class="modal-bg" id="alarmModalBg">
+  <div class="modal" style="text-align:center;">
+    <h3 id="alarmTitle" style="font-size:22px;">⏰ Recordatorio</h3>
+    <p id="alarmBody" style="font-size:15px; margin-bottom:16px;"></p>
+    <button class="pill gold" id="alarmDismiss">Entendido</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="themeModalBg">
+  <div class="modal">
+    <button class="close" data-close="themeModalBg">×</button>
+    <h3>Tema y colores</h3>
+    <div class="theme-row">
+      <div class="lever on" id="nightModeLever"><div class="knob"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="5.6" y1="5.6" x2="7.4" y2="7.4"/><line x1="16.6" y1="16.6" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="16.6" y2="7.4"/><line x1="7.4" y1="16.6" x2="5.6" y2="18.4"/></svg></div></div>
+      <div>
+        <div class="theme-row-title">Modo noche</div>
+        <div class="theme-row-sub">Alterna entre tinta oscura y pergamino claro, como el cuaderno de Da Vinci</div>
+      </div>
+    </div>
+    <div class="color-picker-label" style="margin-top:18px;">COLOR DE LA INTERFAZ</div>
+    <div class="accent-swatch-row" id="accentSwatchRow"></div>
+    <button class="pill gold" id="themeDoneBtn" style="width:fit-content;">Listo</button>
+  </div>
+</div>
+
+<div class="key-overlay" id="keyOverlay">
+  <div class="key-art">
+    <svg viewBox="0 0 120 260" aria-hidden="true">
+      <!-- anillo superior: el círculo del compás, como en el logo -->
+      <circle class="key-ring" cx="60" cy="46" r="30"/>
+      <circle class="key-ring-inner" cx="60" cy="46" r="19"/>
+      <!-- brazos del compás dentro del anillo -->
+      <line class="key-arm" x1="60" y1="30" x2="49" y2="62"/>
+      <line class="key-arm" x1="60" y1="30" x2="71" y2="62"/>
+      <circle class="key-pivot" cx="60" cy="30" r="4"/>
+      <!-- vástago -->
+      <line class="key-shaft" x1="60" y1="76" x2="60" y2="215"/>
+      <!-- dientes con forma de páginas/engrane -->
+      <path class="key-teeth" d="M60,215 L88,215 L88,199 M60,190 L82,190 L82,176 M60,166 L80,166"/>
+      <circle class="key-tip" cx="60" cy="228" r="5"/>
+    </svg>
+  </div>
+  <div class="key-title">Habitación descubierta</div>
+  <p class="key-quote">"Así como una jornada bien empleada produce un dulce sueño, así una vida bien usada causa una dulce muerte."<br><span>— Leonardo da Vinci</span></p>
+  <p class="key-note">Bajo capas de cal, la Sala delle Asse durmió olvidada durante siglos hasta que alguien volvió a mirar.</p>
+  <button class="pill gold" id="keyEnterBtn">Entrar</button>
+</div>
+
+<div class="secret-overlay" id="secretOverlay">
+  <div class="codex-book">
+    <div class="mirror">oiranutneC ,ognitseD onretauC lE</div>
+    <div class="codex-tabs" id="codexTabs"></div>
+    <div class="codex-page" id="codexPage">
+      <div class="codex-page-kind" id="codexPageKind"></div>
+      <div class="codex-page-body" id="codexPageBody"></div>
+    </div>
+    <div class="codex-nav">
+      <button class="codex-arrow" id="codexPrev" title="Página anterior">‹</button>
+      <span class="codex-folio" id="codexFolio"></span>
+      <button class="codex-arrow" id="codexNext" title="Página siguiente">›</button>
+    </div>
+    <div class="row" style="gap:10px; justify-content:center; margin-top:6px;">
+      <button class="pill" id="secretMirrorToggle" style="margin:0;">Modo espejo</button>
+      <button class="pill gold" id="secretClose" style="margin:0;">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ STORAGE ============ */
+const DB_KEY = "xcodex_pro_v1";
+// Carga defensiva: si el JSON está corrupto o manipulado, la app no revienta
+// y cada campo se normaliza al tipo esperado antes de usarse.
+const DB_DEFAULTS = {
+  notes:[], ideas:[], poems:[], events:[], routines:[], routineFired:{}, routineDone:{},
+  theme:"dark", accent:"gold", mirrorMode:false, tapCount:0, easterUnlocked:false, seenFragments:[]
+};
+let db;
+try{
+  const raw = localStorage.getItem(DB_KEY);
+  const parsed = raw ? JSON.parse(raw) : null;
+  db = (parsed && typeof parsed === "object" && !Array.isArray(parsed)) ? parsed : {};
+}catch(e){
+  console.warn("Datos guardados ilegibles; se reinicia el cuaderno.");
+  db = {};
+}
+// normaliza estructura: arreglos que deben ser arreglos, objetos que deben ser objetos
+["notes","ideas","poems","events","routines","seenFragments"].forEach(k=>{
+  if(!Array.isArray(db[k])) db[k] = [];
+});
+["routineFired","routineDone"].forEach(k=>{
+  if(!db[k] || typeof db[k] !== "object" || Array.isArray(db[k])) db[k] = {};
+});
+if(typeof db.theme !== "string") db.theme = DB_DEFAULTS.theme;
+if(typeof db.accent !== "string") db.accent = DB_DEFAULTS.accent;
+if(typeof db.tapCount !== "number" || !isFinite(db.tapCount)) db.tapCount = 0;
+db.mirrorMode = !!db.mirrorMode;
+db.easterUnlocked = !!db.easterUnlocked;
+
+function save(){
+  try{ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+  catch(e){
+    // cuota llena o almacenamiento bloqueado (modo privado): avisar sin romper la app
+    if(typeof toast === "function") toast("No se pudo guardar: almacenamiento lleno o bloqueado");
+    console.warn("save() falló:", e);
+  }
+}
+
+/* ============ SOUND ENGINE (X-tone) ============ */
+let actx;
+function tone(f1=440, f2=660, dur=.04){
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const t = actx.currentTime;
+    [f1,f2].forEach((f,i)=>{
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type="sine"; o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.15, t+0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+dur+i*0.01);
+      o.connect(g); g.connect(actx.destination);
+      o.start(t); o.stop(t+dur+0.05+i*0.01);
+    });
+  }catch(e){}
+}
+function alarmSound(){
+  // Sonido #20: campana de monasterio, 12 repeticiones (elegido por Xanibal para la alarma general)
+  let i=0;
+  const iv=setInterval(()=>{
+    playBell(174, 2.4, [1,2,3,4]);
+    i++; if(i>=12) clearInterval(iv);
+  }, 550);
+  playBell(174, 2.4, [1,2,3,4]);
+}
+function alarmSoundRoutine(){
+  // Alarma de rutina: mismo sonido y volumen que entrar/volver al inicio (cristal armonioso), 12 repeticiones
+  let i=0;
+  const iv=setInterval(()=>{
+    playBell(440, 2.6, [1,2.4], 0.005625);
+    i++; if(i>=12) clearInterval(iv);
+  }, 550);
+  playBell(440, 2.6, [1,2.4], 0.005625);
+}
+
+/* ---------- síntesis extendida de sonidos de época ---------- */
+function ctx(){ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); return actx; }
+
+// bus compartido: agrega un poco de cuerpo/resonancia de sala para que nada suene a "midi" plano
+function getBus(c){
+  if(c._bus) return c._bus;
+  const dry = c.createGain(); dry.gain.value = 1;
+  const wet = c.createGain(); wet.gain.value = .22;
+  const delay = c.createDelay(1.0); delay.delayTime.value = .085;
+  const fb = c.createGain(); fb.gain.value = .28;
+  const warmth = c.createBiquadFilter(); warmth.type="lowpass"; warmth.frequency.value = 2200;
+  dry.connect(c.destination);
+  dry.connect(delay);
+  delay.connect(warmth); warmth.connect(fb); fb.connect(delay);
+  warmth.connect(wet); wet.connect(c.destination);
+  c._bus = dry;
+  return dry;
+}
+
+function playBell(freq, dur, partials, baseVol){
+  try{
+    const c = ctx(), bus = getBus(c), t = c.currentTime;
+    (partials||[1, 2.01, 3.03, 4.2]).forEach((mult, i)=>{
+      const o=c.createOscillator(), g=c.createGain();
+      o.type="sine"; o.frequency.value=freq*mult;
+      const vol = (baseVol!=null?baseVol:0.22)/(i+1);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+      o.connect(g); g.connect(bus);
+      o.start(t); o.stop(t+dur+0.05);
+    });
+  }catch(e){}
+}
+function playPluck(freq, dur){
+  try{
+    const c = ctx(), bus = getBus(c), t = c.currentTime;
+    const o=c.createOscillator(), g=c.createGain(), f=c.createBiquadFilter();
+    o.type="triangle"; o.frequency.value=freq;
+    f.type="lowpass"; f.frequency.setValueAtTime(freq*4, t); f.frequency.exponentialRampToValueAtTime(freq*0.7, t+dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.22, t+0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(f); f.connect(g); g.connect(bus);
+    o.start(t); o.stop(t+dur+0.05);
+  }catch(e){}
+}
+function makeNoiseBuffer(c, dur){
+  const n = c.sampleRate*dur;
+  const buf = c.createBuffer(1, n, c.sampleRate);
+  const d = buf.getChannelData(0);
+  for(let i=0;i<n;i++) d[i] = Math.random()*2-1;
+  return buf;
+}
+function playNoise(dur, filterFreq, type, vol){
+  try{
+    const c = ctx(), bus = getBus(c), t = c.currentTime;
+    const src = c.createBufferSource(); src.buffer = makeNoiseBuffer(c, dur);
+    const f = c.createBiquadFilter(); f.type = type||"bandpass"; f.frequency.value = filterFreq||900; f.Q.value=0.8;
+    const tame = c.createBiquadFilter(); tame.type="lowpass"; tame.frequency.value=2600;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol||0.25, t+0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    src.connect(f); f.connect(tame); tame.connect(g); g.connect(bus);
+    src.start(t); src.stop(t+dur+0.05);
+  }catch(e){}
+}
+function playClick(freq, dur){
+  try{
+    const c = ctx(), bus = getBus(c), t = c.currentTime;
+    const o=c.createOscillator(), g=c.createGain(), f=c.createBiquadFilter();
+    o.type="triangle"; o.frequency.value=freq;
+    f.type="lowpass"; f.frequency.setValueAtTime(freq*2.5, t); f.frequency.exponentialRampToValueAtTime(freq*0.6, t+dur);
+    g.gain.setValueAtTime(0.16, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(f); f.connect(g); g.connect(bus);
+    o.start(t); o.stop(t+dur+0.03);
+  }catch(e){}
+}
+function playDrone(freq, dur, vol){
+  try{
+    const c = ctx(), bus = getBus(c), t = c.currentTime;
+    [freq, freq*1.005, freq*2].forEach((f,i)=>{
+      const o=c.createOscillator(), g=c.createGain();
+      o.type="sine"; o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime((vol||0.12)/(i+1), t+dur*0.3);
+      g.gain.linearRampToValueAtTime(0.0001, t+dur);
+      o.connect(g); g.connect(bus);
+      o.start(t); o.stop(t+dur+0.05);
+    });
+  }catch(e){}
+}
+
+// Sonido #14 (todo lo demás): hoja de papel — sin el eco/reverb compartido, con su propio delay cortito
+function playPaperClick(vol){
+  try{
+    const c = ctx(), t = c.currentTime;
+    const dur = 0.07;
+    const src = c.createBufferSource(); src.buffer = makeNoiseBuffer(c, dur);
+    const bp = c.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=1600; bp.Q.value=0.9;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol||0.1, t+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    const delay = c.createDelay(0.2); delay.delayTime.value = 0.045;
+    const delayGain = c.createGain(); delayGain.gain.value = 0.32;
+    src.connect(bp); bp.connect(g); g.connect(c.destination);
+    g.connect(delay); delay.connect(delayGain); delayGain.connect(c.destination);
+    src.start(t); src.stop(t+dur+0.05);
+  }catch(e){}
+}
+// Sonido #13 (entrar/volver al inicio, y al crear nota/idea/poema): cristal armonioso
+function playCrystalChime(){ playBell(440, 2.6, [1,2.4], 0.005625); }
+
+function toast(msg){
+  const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"), 2200);
+}
+
+/* ============ THEME ============ */
+// tema y acento vienen de localStorage: se validan contra lista blanca antes de aplicarse
+if(db.theme !== "light" && db.theme !== "dark") db.theme = "dark";
+if(db.theme==="light") document.body.classList.add("theme-light");
+const ACCENT_KEYS = ["gold","rosa","cian","menta","coral"];
+if(!ACCENT_KEYS.includes(db.accent)) db.accent = "gold";
+document.body.setAttribute("data-accent", db.accent);
+
+const ACCENTS = [
+  {key:"gold",  name:"Dorado Da Vinci", val:"#c99a3f"},
+  {key:"rosa",  name:"Rosa Clarito",    val:"#e3a3c4"},
+  {key:"cian",  name:"Cian-Violeta",    val:"#8fabd6"},
+  {key:"menta", name:"Verde-Menta",     val:"#7fc9a8"},
+  {key:"coral", name:"Dorado-Coral",    val:"#e0925c"}
+];
+const accentRow = document.getElementById("accentSwatchRow");
+ACCENTS.forEach(a=>{
+  const btn = document.createElement("button");
+  btn.type="button"; btn.className="accent-swatch"+(db.accent===a.key?" selected":"");
+  btn.innerHTML = `<span class="dot" style="background:${a.val};"></span><span class="lab">${a.name}</span>`;
+  btn.addEventListener("click", ()=>{
+    db.accent = a.key; save();
+    document.body.setAttribute("data-accent", a.key);
+    [...accentRow.children].forEach(c=>c.classList.remove("selected"));
+    btn.classList.add("selected");
+    playPaperClick(.1);
+    resizeBg();
+  });
+  accentRow.appendChild(btn);
+});
+
+const nightLever = document.getElementById("nightModeLever");
+if(db.theme!=="light") nightLever.classList.add("on"); else nightLever.classList.remove("on");
+nightLever.addEventListener("click", ()=>{
+  const isNight = nightLever.classList.contains("on");
+  db.theme = isNight ? "light" : "dark"; save();
+  document.body.classList.toggle("theme-light", db.theme==="light");
+  playPaperClick(.1);
+  resizeBg();
+});
+
+document.getElementById("themeSettingsBtn").addEventListener("click", ()=> openModal("themeModalBg"));
+document.getElementById("themeDoneBtn").addEventListener("click", ()=>{ closeModal("themeModalBg"); playCrystalChime(); });
+
+/* ============ BACKGROUND: blueprint schematic ============ */
+const bgCanvas = document.getElementById("bg-canvas");
+const bctx = bgCanvas.getContext("2d");
+function resizeBg(){ bgCanvas.width=innerWidth; bgCanvas.height=innerHeight; drawBg(); }
+function drawBg(){
+  const w=bgCanvas.width, h=bgCanvas.height;
+  bctx.clearRect(0,0,w,h);
+  bctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--line') || "#332";
+  bctx.lineWidth=1;
+  const gap=34;
+  for(let x=0;x<w;x+=gap){ bctx.beginPath(); bctx.moveTo(x,0); bctx.lineTo(x,h); bctx.globalAlpha=0.10; bctx.stroke(); }
+  for(let y=0;y<h;y+=gap){ bctx.beginPath(); bctx.moveTo(0,y); bctx.lineTo(w,y); bctx.globalAlpha=0.10; bctx.stroke(); }
+  bctx.globalAlpha=1;
+}
+window.addEventListener("resize", resizeBg);
+resizeBg();
+
+/* ============ NAV ============ */
+const views = document.querySelectorAll(".view");
+const tabBtns = document.querySelectorAll(".tab-btn");
+function showTab(name){
+  views.forEach(v=>v.classList.toggle("active", v.dataset.view===name));
+  tabBtns.forEach(b=>b.classList.toggle("active", b.dataset.tab===name));
+  document.getElementById("micFab").style.display = (name==="notas") ? "flex":"none";
+  if(name==="home") renderHome();
+  if(name==="calendario") mainCal.refresh();
+}
+tabBtns.forEach(b=> b.addEventListener("click", ()=> showTab(b.dataset.tab)));
+document.getElementById("micFab").style.display="none";
+
+/* ============ MODALS ============ */
+function openModal(id){ document.getElementById(id).classList.add("show"); }
+function closeModal(id){ document.getElementById(id).classList.remove("show"); }
+document.querySelectorAll("[data-close]").forEach(b=> b.addEventListener("click", ()=> closeModal(b.dataset.close)));
+document.querySelectorAll(".modal-bg").forEach(m=> m.addEventListener("click", e=>{ if(e.target===m) m.classList.remove("show"); }));
+
+/* ============ NOTAS ============ */
+const COLORS = [
+  {name:"General", val:"#c99a3f"},
+  {name:"Trabajo", val:"#4f9c9c"},
+  {name:"Personal", val:"#7c8a5e"},
+  {name:"Urgente", val:"#b5533c"}
+];
+let selectedColor = COLORS[0].val;
+let selectedColorName = COLORS[0].name;
+const swatchWrap = document.getElementById("colorSwatches");
+COLORS.forEach((c,i)=>{
+  const chip=document.createElement("button");
+  chip.type="button";
+  chip.className="color-chip" + (i===0?" selected":"");
+  chip.style.setProperty("--chip-color", c.val);
+  chip.innerHTML = `<span class="dot"></span><span>${c.name}</span>`;
+  chip.addEventListener("click", ()=>{
+    [...swatchWrap.children].forEach(s=>s.classList.remove("selected"));
+    chip.classList.add("selected");
+    selectedColor = c.val; selectedColorName = c.name;
+  });
+  swatchWrap.appendChild(chip);
+});
+
+let noteFilterCategory = null; // null = todas
+function buildNotesFilterChips(){
+  const wrap = document.getElementById("notesFilterChips");
+  wrap.innerHTML = "";
+  const allChip = document.createElement("button");
+  allChip.className = "filter-chip active"; allChip.textContent = "Todas";
+  wrap.appendChild(allChip);
+  COLORS.forEach(c=>{
+    const chip = document.createElement("button");
+    chip.className = "filter-chip"; chip.textContent = c.name;
+    wrap.appendChild(chip);
+  });
+  [...wrap.children].forEach((chip, i)=>{
+    chip.addEventListener("click", ()=>{
+      noteFilterCategory = i===0 ? null : COLORS[i-1].name;
+      [...wrap.children].forEach(c=>c.classList.remove("active"));
+      chip.classList.add("active");
+      renderNotes();
+    });
+  });
+}
+buildNotesFilterChips();
+document.getElementById("notesSearch").addEventListener("input", renderNotes);
+
+function renderNotes(){
+  const list = document.getElementById("notesList");
+  if(!db.notes.length){ list.innerHTML = `<div class="empty">Aún no hay notas. Toca el micrófono para dictar la primera, o escribe una idea rápida.</div>`; return; }
+  const searchVal = (document.getElementById("notesSearch").value||"").toLowerCase().trim();
+  let filtered = [...db.notes];
+  if(noteFilterCategory) filtered = filtered.filter(n=> n.colorName===noteFilterCategory);
+  if(searchVal) filtered = filtered.filter(n=> n.text.toLowerCase().includes(searchVal));
+  if(!filtered.length){ list.innerHTML = `<div class="empty">Sin resultados para tu búsqueda.</div>`; return; }
+  list.innerHTML = "";
+  filtered.sort((a,b)=>b.created-a.created).forEach(n=>{
+    const el=document.createElement("div"); el.className="card note-item"; el.style.cursor="pointer";
+    const when = n.date ? `${formatDate(n.date)}${n.time? ' · '+n.time:''}` : "";
+    const safeColor = safeHexColor(n.color);
+    el.innerHTML = `
+      <div class="note-color-bar" style="background:${safeColor}"></div>
+      <div style="flex:1;">
+        <div class="note-text">${escapeHtml(n.text)}</div>
+        <div class="note-meta">${n.colorName?`<span class="tag" style="background:${safeColor}22; color:${safeColor}; border:1px solid ${safeColor}55;">${escapeHtml(n.colorName)}</span>`:""}${when?`<span>${escapeHtml(when)}</span>`:""}${n.alarm?`<span class="alarm-badge">⏰</span>`:""}</div>
+      </div>
+      <button class="note-del" data-id="${escapeHtml(String(n.id))}">✕</button>
+    `;
+    el.addEventListener("click", (e)=>{
+      if(e.target.closest(".note-del")) return;
+      openNoteForEdit(n);
+    });
+    el.querySelector(".note-del").addEventListener("click", (e)=>{
+      e.stopPropagation();
+      if(n.relatedEventId) db.events = db.events.filter(x=>x.id!==n.relatedEventId);
+      db.notes = db.notes.filter(x=>x.id!==n.id);
+      save(); renderNotes(); renderHome(); mainCal.refresh();
+    });
+    list.appendChild(el);
+  });
+}
+
+/* ---- utilidades de fecha ---- */
+function fmt(d){ return d.toISOString().slice(0,10); }
+function formatDate(iso){
+  const d = new Date(iso+"T00:00:00");
+  return d.toLocaleDateString("es-MX", {day:"numeric", month:"short"});
+}
+function pad(n){ return n.toString().padStart(2,"0"); }
+const DOW = ["L","M","X","J","V","S","D"];
+
+/* ---- constructor de calendario reutilizable (propio, sin inputs nativos) ---- */
+function buildCalendar(opts){
+  let cursor = new Date(); cursor.setDate(1);
+  function render(){
+    const grid = opts.gridEl, label = opts.labelEl;
+    label.textContent = cursor.toLocaleDateString("es-MX", {month:"long", year:"numeric"});
+    grid.innerHTML = "";
+    DOW.forEach(d=>{ const c=document.createElement("div"); c.className="cal-dow"; c.textContent=d; grid.appendChild(c); });
+    const year=cursor.getFullYear(), month=cursor.getMonth();
+    const first = new Date(year, month, 1);
+    const startOffset = (first.getDay()+6)%7;
+    const daysInMonth = new Date(year, month+1, 0).getDate();
+    const daysInPrev = new Date(year, month, 0).getDate();
+    const todayStr = fmt(new Date());
+    const cells=[];
+    for(let i=startOffset;i>0;i--) cells.push({d:daysInPrev-i+1, other:true, month:month-1});
+    for(let d=1; d<=daysInMonth; d++) cells.push({d, other:false, month});
+    while(cells.length%7!==0 || cells.length<42) cells.push({d:cells.length-(startOffset+daysInMonth)+1, other:true, month:month+1});
+    const selected = opts.getSelected();
+    cells.forEach(c=>{
+      const dateObj = new Date(year, c.month, c.d);
+      const iso = fmt(dateObj);
+      const el = document.createElement("div");
+      el.className = "cal-day"+(c.other?" other":"")+(iso===todayStr?" today":"")+(iso===selected?" selected":"");
+      const hasMark = opts.markFn ? opts.markFn(iso) : false;
+      el.innerHTML = `<div>${c.d}</div>${hasMark?'<div class="dot"></div>':''}`;
+      el.addEventListener("click", ()=>{ opts.onSelect(iso); render(); });
+      grid.appendChild(el);
+    });
+  }
+  opts.prevBtn.addEventListener("click", ()=>{ cursor.setMonth(cursor.getMonth()-1); render(); });
+  opts.nextBtn.addEventListener("click", ()=>{ cursor.setMonth(cursor.getMonth()+1); render(); });
+  return { refresh: render, jumpTo:(iso)=>{ cursor = new Date(iso+"T00:00:00"); cursor.setDate(1); render(); } };
+}
+
+/* ---- constructor de cinta de tiempo interactiva (reemplaza el dial de flechas) ---- */
+function buildTimeRibbon(scrollEl, displayEl, initH, initM){
+  const TICK_W = 14;
+  const TOTAL = 24*4; // franjas de 15 minutos
+  scrollEl.innerHTML = "";
+  const frag = document.createDocumentFragment();
+  for(let i=0;i<TOTAL;i++){
+    const hh = Math.floor(i/4), mm = (i%4)*15;
+    const tick = document.createElement("div");
+    tick.className = "time-tick" + (mm===0?" hour":mm===30?" half":"");
+    tick.dataset.i = i;
+    tick.innerHTML = `<div class="bar"></div>${mm===0?`<span class="lab">${pad(hh)}</span>`:""}`;
+    tick.addEventListener("click", ()=>{ tick.scrollIntoView({behavior:"smooth", inline:"center", block:"nearest"}); });
+    frag.appendChild(tick);
+  }
+  scrollEl.appendChild(frag);
+
+  function updatePadding(){
+    const w = scrollEl.clientWidth || scrollEl.parentElement.clientWidth;
+    const padPx = Math.max(0, w/2 - TICK_W/2);
+    scrollEl.style.paddingLeft = padPx+"px";
+    scrollEl.style.paddingRight = padPx+"px";
+  }
+  updatePadding();
+
+  function timeToIndex(h,m){ return ((h*4 + Math.round(m/15)) + TOTAL) % TOTAL; }
+  function jumpTo(h,m,smooth){
+    const child = scrollEl.children[timeToIndex(h,m)];
+    if(child) child.scrollIntoView({behavior: smooth?"smooth":"auto", inline:"center", block:"nearest"});
+  }
+
+  let current = {h:initH, m: Math.round(initM/15)*15%60};
+  function paint(){ displayEl.textContent = pad(current.h)+":"+pad(current.m); }
+  paint();
+
+  let scrollTimer;
+  scrollEl.addEventListener("scroll", ()=>{
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(()=>{
+      const center = scrollEl.scrollLeft + scrollEl.clientWidth/2;
+      let idx = Math.round((center - TICK_W/2) / TICK_W);
+      idx = Math.max(0, Math.min(TOTAL-1, idx));
+      current = { h: Math.floor(idx/4), m: (idx%4)*15 };
+      paint();
+    }, 70);
+  });
+
+  requestAnimationFrame(()=> jumpTo(initH, current.m, false));
+
+  return {
+    getValue: ()=> current,
+    setValue: (nh,nm)=>{ current = {h:nh, m: Math.round(nm/15)*15%60}; paint(); jumpTo(current.h, current.m, true); }
+  };
+}
+function toggleLever(el){ el.classList.toggle("on"); return el.classList.contains("on"); }
+document.querySelectorAll(".lever").forEach(l=> l.addEventListener("click", ()=> toggleLever(l)));
+
+/* ---- calendario principal (vista Horario) ---- */
+let selectedDate = fmt(new Date());
+function weekdayMon0(iso){ return (new Date(iso+"T00:00:00").getDay()+6)%7; }
+function routinesForDate(iso){ return db.routines.filter(r=>r.weekdays.includes(weekdayMon0(iso))); }
+
+const mainCal = buildCalendar({
+  gridEl: document.getElementById("calGrid"),
+  labelEl: document.getElementById("calMonthLabel"),
+  prevBtn: document.getElementById("calPrev"),
+  nextBtn: document.getElementById("calNext"),
+  getSelected: ()=> selectedDate,
+  onSelect: (iso)=>{ selectedDate=iso; closeCreatePanels(); renderDayAgenda(); },
+  markFn: (iso)=> db.events.some(e=>e.date===iso) || routinesForDate(iso).length>0
+});
+mainCal.refresh();
+
+/* ---- selector de días para rutinas (los 7 círculos) ---- */
+let routineDays = new Set();
+const routineChipsWrap = document.getElementById("routineDaysChips");
+DOW.forEach((d,i)=>{
+  const chip = document.createElement("button");
+  chip.type="button"; chip.className="weekday-chip"; chip.textContent=d;
+  chip.addEventListener("click", ()=>{
+    if(routineDays.has(i)){ routineDays.delete(i); chip.classList.remove("on"); }
+    else { routineDays.add(i); chip.classList.add("on"); }
+  });
+  routineChipsWrap.appendChild(chip);
+});
+function resetRoutineChips(){
+  routineDays = new Set();
+  [...routineChipsWrap.children].forEach(c=>c.classList.remove("on"));
+}
+
+let eventTimeDial = null, eventEndTimeDial = null, routineTimeDial = null, routineEndTimeDial = null;
+
+function closeCreatePanels(){
+  document.getElementById("eventCreatePanel").style.display="none";
+  document.getElementById("routineCreatePanel").style.display="none";
+}
+function addMinutes(h,m,mins){ const total=(h*60+m+mins+1440*4)%1440; return {h:Math.floor(total/60), m:total%60}; }
+
+/* ---- chips de duración rápida: evita tener que arrastrar la cinta de fin cada vez ---- */
+const DURATIONS = [15,30,45,60,90,120];
+function durLabel(mins){ return mins<60 ? mins+"m" : (mins===60?"1h":(mins/60)+"h"); }
+function buildDurationChips(wrapId, startDial, endDial){
+  const wrap = document.getElementById(wrapId);
+  wrap.innerHTML = "";
+  DURATIONS.forEach(mins=>{
+    const chip = document.createElement("button");
+    chip.type="button"; chip.className="duration-chip"; chip.textContent = durLabel(mins);
+    chip.addEventListener("click", ()=>{
+      [...wrap.children].forEach(c=>c.classList.remove("active"));
+      chip.classList.add("active");
+      const {h,m} = startDial.getValue();
+      const end = addMinutes(h,m,mins);
+      endDial.setValue(end.h, end.m);
+    });
+    wrap.appendChild(chip);
+  });
+}
+
+/* ---- vista previa en vivo: cómo va quedando el día mientras agregas actividades ---- */
+function renderInlinePreview(){
+  const oneOff = db.events.filter(e=>e.date===selectedDate).map(e=>({...e, isRoutine:false}));
+  const routines = routinesForDate(selectedDate).map(r=>({...r, isRoutine:true}));
+  const items = [...oneOff, ...routines].sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+  const html = items.length
+    ? items.map(it=>`<span class="preview-chip">${escapeHtml(it.time||"")}${it.endTime?'–'+escapeHtml(it.endTime):''} · ${escapeHtml(it.title)}${it.isRoutine?' 🔁':''}</span>`).join("")
+    : `<span class="preview-empty">Aún no hay nada este día</span>`;
+  ["eventInlinePreview","routineInlinePreview"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = html;
+  });
+}
+
+document.getElementById("addEventChoiceBtn").addEventListener("click", ()=>{
+  const panel = document.getElementById("eventCreatePanel");
+  const showing = panel.style.display==="block";
+  closeCreatePanels();
+  if(!showing){
+    panel.style.display="block";
+    const now = new Date();
+    const startH = now.getHours(), startM = Math.round(now.getMinutes()/15)*15%60;
+    const end = addMinutes(startH, startM, 60);
+    if(!eventTimeDial){ eventTimeDial = buildTimeRibbon(document.getElementById("eventTimeDial"), document.getElementById("eventRibbonDisplay"), startH, startM); }
+    else { eventTimeDial.setValue(startH, startM); }
+    if(!eventEndTimeDial){ eventEndTimeDial = buildTimeRibbon(document.getElementById("eventEndTimeDial"), document.getElementById("eventEndRibbonDisplay"), end.h, end.m); }
+    else { eventEndTimeDial.setValue(end.h, end.m); }
+    buildDurationChips("eventDurationChips", eventTimeDial, eventEndTimeDial);
+    renderInlinePreview();
+    document.getElementById("eventTitle").focus();
+  }
+});
+
+document.getElementById("addRoutineChoiceBtn").addEventListener("click", ()=>{
+  const panel = document.getElementById("routineCreatePanel");
+  const showing = panel.style.display==="block";
+  closeCreatePanels();
+  if(!showing){
+    panel.style.display="block";
+    const now = new Date();
+    const startH = now.getHours(), startM = Math.round(now.getMinutes()/15)*15%60;
+    const end = addMinutes(startH, startM, 60);
+    if(!routineTimeDial){ routineTimeDial = buildTimeRibbon(document.getElementById("routineTimeDial"), document.getElementById("routineRibbonDisplay"), startH, startM); }
+    else { routineTimeDial.setValue(startH, startM); }
+    if(!routineEndTimeDial){ routineEndTimeDial = buildTimeRibbon(document.getElementById("routineEndTimeDial"), document.getElementById("routineEndRibbonDisplay"), end.h, end.m); }
+    else { routineEndTimeDial.setValue(end.h, end.m); }
+    buildDurationChips("routineDurationChips", routineTimeDial, routineEndTimeDial);
+    resetRoutineChips();
+    // marca por defecto el día de la semana del día seleccionado, como punto de partida
+    routineDays.add(weekdayMon0(selectedDate));
+    routineChipsWrap.children[weekdayMon0(selectedDate)].classList.add("on");
+    renderInlinePreview();
+    document.getElementById("routineTitle").focus();
+  }
+});
+
+function buildDayTable(items){
+  const byHour = {};
+  items.forEach(it=>{
+    const h = it.time ? parseInt(it.time.split(":")[0],10) : 0;
+    (byHour[h] = byHour[h]||[]).push(it);
+  });
+  let rows = "";
+  for(let h=0; h<24; h++){
+    const list = byHour[h]||[];
+    rows += `<tr class="dt-row${list.length?' has-items':''}"><td class="dt-hour">${pad(h)}:00</td><td class="dt-content">`;
+    rows += list.map(it=>`
+        <div class="dt-item">
+          <span class="dt-time">${escapeHtml(it.time||"")}${it.endTime?'–'+escapeHtml(it.endTime):''}</span>
+          <span class="dt-title">${escapeHtml(it.title)}</span>
+          ${it.isRoutine?'<span class="routine-badge" title="Rutina recurrente">🔁</span>':''}
+          ${it.alarm?'<span class="alarm-badge">⏰</span>':''}
+          <button class="dt-del" data-id="${escapeHtml(String(it.id))}" data-routine="${it.isRoutine?1:0}">✕</button>
+        </div>`).join("");
+    rows += `</td></tr>`;
+  }
+  return `<table class="day-table"><tbody>${rows}</tbody></table>`;
+}
+
+function renderDayAgenda(){
+  const label = document.getElementById("agendaDayLabel");
+  label.innerHTML = `Agenda · ${formatDate(selectedDate)} <span class="rule"></span>`;
+  document.getElementById("eventDayLabel").textContent = formatDate(selectedDate);
+  const wrap = document.getElementById("dayAgenda");
+  const oneOff = db.events.filter(e=>e.date===selectedDate).map(e=>({...e, isRoutine:false}));
+  const routines = routinesForDate(selectedDate).map(r=>({...r, isRoutine:true}));
+  const items = [...oneOff, ...routines].sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+  if(!items.length){ wrap.innerHTML = `<div class="empty">Sin eventos este día.</div>`; return; }
+  wrap.innerHTML = buildDayTable(items);
+  wrap.querySelectorAll(".dt-del").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const id = btn.dataset.id, isRoutine = btn.dataset.routine==="1";
+      if(isRoutine){
+        db.routines = db.routines.filter(x=>x.id!==id);
+        toast("Rutina eliminada de todos sus días");
+      } else {
+        db.events = db.events.filter(x=>x.id!==id);
+      }
+      save(); renderDayAgenda(); mainCal.refresh(); renderHome();
+    });
+  });
+}
+renderDayAgenda();
+
+document.getElementById("saveEventBtn").addEventListener("click", ()=>{
+  const title = document.getElementById("eventTitle").value.trim();
+  if(!title){ toast("Falta el título"); return; }
+  const {h,m} = eventTimeDial.getValue();
+  const endV = eventEndTimeDial.getValue();
+  const time = `${pad(h)}:${pad(m)}`;
+  const endTime = `${pad(endV.h)}:${pad(endV.m)}`;
+  const alarm = document.getElementById("eventAlarmLever").classList.contains("on");
+  db.events.push({ id:"e"+Date.now(), title, date:selectedDate, time, endTime, alarm, fired:false });
+  save();
+  renderDayAgenda(); mainCal.refresh(); renderHome();
+  toast("Evento agendado"); playPaperClick(.12);
+  requestNotifPermission();
+  // flujo rápido: deja el panel abierto, listo para la siguiente actividad empezando donde terminó esta
+  document.getElementById("eventTitle").value="";
+  document.getElementById("eventTitle").focus();
+  eventTimeDial.setValue(endV.h, endV.m);
+  const nextEnd = addMinutes(endV.h, endV.m, 60);
+  eventEndTimeDial.setValue(nextEnd.h, nextEnd.m);
+  [...document.getElementById("eventDurationChips").children].forEach(c=>c.classList.remove("active"));
+  renderInlinePreview();
+});
+
+document.getElementById("saveRoutineBtn").addEventListener("click", ()=>{
+  const title = document.getElementById("routineTitle").value.trim();
+  if(!title){ toast("Falta el título"); return; }
+  if(routineDays.size===0){ toast("Elige al menos un día"); return; }
+  const {h,m} = routineTimeDial.getValue();
+  const endV = routineEndTimeDial.getValue();
+  const time = `${pad(h)}:${pad(m)}`;
+  const endTime = `${pad(endV.h)}:${pad(endV.m)}`;
+  const alarm = document.getElementById("routineAlarmLever").classList.contains("on");
+  db.routines.push({ id:"r"+Date.now(), title, time, endTime, alarm, weekdays:[...routineDays] });
+  save();
+  renderDayAgenda(); mainCal.refresh(); renderHome();
+  toast("Rutina creada para " + [...routineDays].sort().map(i=>DOW[i]).join(", "));
+  playPaperClick(.12);
+  requestNotifPermission();
+  // flujo rápido: deja el panel abierto, listo para la siguiente actividad (mismos días marcados)
+  document.getElementById("routineTitle").value="";
+  document.getElementById("routineTitle").focus();
+  routineTimeDial.setValue(endV.h, endV.m);
+  const nextEnd = addMinutes(endV.h, endV.m, 60);
+  routineEndTimeDial.setValue(nextEnd.h, nextEnd.m);
+  [...document.getElementById("routineDurationChips").children].forEach(c=>c.classList.remove("active"));
+  renderInlinePreview();
+});
+
+/* ---- agendar nota (sin inputs nativos: calendario + dial propios) ---- */
+let noteSchedule = { date: null };
+let noteMiniCal = null, noteTimeDial = null;
+let editingNoteId = null;
+
+function resetNoteModal(){
+  editingNoteId = null;
+  document.getElementById("noteInput").value = "";
+  document.getElementById("noteCalWrap").style.display = "none";
+  document.getElementById("noteScheduleToggle").textContent = "📅 Agendar esta nota";
+  noteSchedule = { date: null };
+  selectedColor = COLORS[0].val; selectedColorName = COLORS[0].name;
+  const swatches = document.getElementById("colorSwatches");
+  if(swatches) [...swatches.children].forEach((c,i)=> c.classList.toggle("selected", i===0));
+  document.getElementById("noteAlarmLever").classList.add("on");
+  document.getElementById("saveNoteBtn").textContent = "Guardar nota";
+}
+
+function ensureNoteSchedulerBuilt(){
+  if(noteMiniCal) return;
+  noteMiniCal = buildCalendar({
+    gridEl: document.getElementById("noteCalGrid"),
+    labelEl: document.getElementById("noteCalLabel"),
+    prevBtn: document.getElementById("noteCalPrev"),
+    nextBtn: document.getElementById("noteCalNext"),
+    getSelected: ()=> noteSchedule.date,
+    onSelect: (iso)=>{ noteSchedule.date=iso; }
+  });
+  const now = new Date();
+  noteTimeDial = buildTimeRibbon(document.getElementById("noteTimeDial"), document.getElementById("noteRibbonDisplay"), now.getHours(), Math.round(now.getMinutes()/15)*15%60);
+}
+
+function openNoteForEdit(note){
+  resetNoteModal();
+  editingNoteId = note.id;
+  document.getElementById("noteInput").value = note.text;
+  selectedColor = note.color || COLORS[0].val;
+  selectedColorName = note.colorName || COLORS[0].name;
+  const swatches = document.getElementById("colorSwatches");
+  [...swatches.children].forEach(c=>{
+    c.classList.toggle("selected", c.style.getPropertyValue("--chip-color")===selectedColor);
+  });
+  document.getElementById("saveNoteBtn").textContent = "Guardar cambios";
+  if(note.date && note.time){
+    ensureNoteSchedulerBuilt();
+    noteSchedule.date = note.date;
+    const [hh,mm] = note.time.split(":").map(Number);
+    noteTimeDial.setValue(hh, mm||0);
+    noteMiniCal.jumpTo(note.date);
+    document.getElementById("noteCalWrap").style.display = "block";
+    document.getElementById("noteScheduleToggle").textContent = "📅 Quitar agenda";
+    document.getElementById("noteAlarmLever").classList.toggle("on", !!note.alarm);
+  }
+  openModal("noteModalBg");
+}
+
+document.getElementById("noteScheduleToggle").addEventListener("click", ()=>{
+  const wrap = document.getElementById("noteCalWrap");
+  const showing = wrap.style.display==="block";
+  wrap.style.display = showing? "none":"block";
+  if(!showing){
+    if(!noteSchedule.date) noteSchedule.date = fmt(new Date());
+    ensureNoteSchedulerBuilt();
+    noteMiniCal.jumpTo(noteSchedule.date);
+    document.getElementById("noteScheduleToggle").textContent = "📅 Quitar agenda";
+    requestAnimationFrame(()=>{
+      wrap.scrollIntoView({behavior:"smooth", block:"nearest"});
+      wrap.classList.add("focus-pulse");
+      setTimeout(()=> wrap.classList.remove("focus-pulse"), 1100);
+    });
+  } else {
+    document.getElementById("noteScheduleToggle").textContent = "📅 Agendar esta nota";
+  }
+});
+
+document.getElementById("saveNoteBtn").addEventListener("click", ()=>{
+  const text = document.getElementById("noteInput").value.trim();
+  if(!text){ toast("Escribe algo primero"); return; }
+  const scheduling = document.getElementById("noteCalWrap").style.display==="block";
+  let date="", time="", alarm=false;
+  if(scheduling && noteTimeDial){
+    date = noteSchedule.date;
+    const {h,m} = noteTimeDial.getValue();
+    time = `${pad(h)}:${pad(m)}`;
+    alarm = document.getElementById("noteAlarmLever").classList.contains("on");
+  }
+
+  if(editingNoteId){
+    const note = db.notes.find(n=>n.id===editingNoteId);
+    if(note){
+      note.text=text; note.color=selectedColor; note.colorName=selectedColorName;
+      note.date=date; note.time=time; note.alarm=!!alarm; note.touched=Date.now();
+      if(note.relatedEventId){ db.events = db.events.filter(e=>e.id!==note.relatedEventId); note.relatedEventId=null; }
+      if(date && time){
+        const eventId = "n"+Date.now();
+        db.events.push({ id:eventId, title:"📝 "+text.slice(0,40), date, time, alarm:!!alarm, fromNote:true, noteId:note.id, fired:false });
+        note.relatedEventId = eventId;
+      }
+    }
+    toast("Nota actualizada");
+  } else {
+    const noteId = Date.now();
+    const note = { id:noteId, text, color:selectedColor, colorName:selectedColorName, date, time, alarm:!!alarm, created:Date.now(), touched:Date.now(), fired:false, relatedEventId:null };
+    if(date && time){
+      const eventId = "n"+(Date.now()+1);
+      db.events.push({ id:eventId, title:"📝 "+text.slice(0,40), date, time, alarm:!!alarm, fromNote:true, noteId, fired:false });
+      note.relatedEventId = eventId;
+    }
+    db.notes.push(note);
+    toast("Nota guardada");
+  }
+
+  save();
+  resetNoteModal();
+  closeModal("noteModalBg");
+  renderNotes(); renderHome(); mainCal.refresh();
+  playCrystalChime();
+  requestNotifPermission();
+});
+
+/* ---- Dictado ---- */
+let recognizer=null, recording=false;
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const micFab = document.getElementById("micFab");
+micFab.addEventListener("click", ()=>{ resetNoteModal(); openModal("noteModalBg"); });
+
+const DICTATION_ERROR_MSG = {
+  "not-allowed": "Permiso de micrófono denegado. Actívalo en los ajustes del sitio.",
+  "service-not-allowed": "El navegador bloqueó el micrófono en esta página.",
+  "no-speech": "No se detectó voz. Intenta de nuevo.",
+  "audio-capture": "No se encontró micrófono en este dispositivo.",
+  "network": "Error de red al usar el dictado.",
+  "aborted": "Dictado detenido."
+};
+
+function startDictation(){
+  if(!SR){ toast("Dictado no disponible en este navegador"); return; }
+  const isOpera = navigator.userAgent.includes("OPR/") || navigator.userAgent.includes("Opera");
+  const isBrave = !!navigator.brave;
+  if(isOpera || isBrave){
+    toast("Opera y Brave no soportan el dictado por voz. Abre la app en Chrome, Edge o Safari.");
+    return;
+  }
+  if(!window.isSecureContext){
+    toast("El micrófono necesita https — súbelo a un hosting (ej. Netlify) para dictar");
+    return;
+  }
+  const ta = document.getElementById("noteInput");
+  const micBtn = document.getElementById("noteMicBtn");
+  const banner = document.getElementById("dictationBanner");
+  if(recording){ recognizer && recognizer.stop(); return; }
+
+  const baseText = ta.value.trim() ? ta.value.trim()+" " : "";
+  let watchdog = null;
+
+  recognizer = new SR();
+  recognizer.lang = "es-MX"; recognizer.continuous = true; recognizer.interimResults = true;
+  recognizer.onstart = ()=>{
+    recording=true; micBtn.classList.add("recording");
+    banner.style.display="flex";
+    clearTimeout(watchdog);
+    watchdog = setTimeout(()=>{
+      if(recording){
+        toast("El dictado no responde. Si abriste el archivo directo (no https), súbelo a un hosting como Netlify");
+      }
+    }, 6000);
+  };
+  recognizer.onerror = (e)=>{
+    clearTimeout(watchdog);
+    recording=false; micBtn.classList.remove("recording"); banner.style.display="none";
+    toast(DICTATION_ERROR_MSG[e.error] || ("Error de dictado: "+e.error));
+  };
+  recognizer.onend = ()=>{ clearTimeout(watchdog); recording=false; micBtn.classList.remove("recording"); banner.style.display="none"; };
+  recognizer.onresult = (ev)=>{
+    clearTimeout(watchdog);
+    let finalTxt="", interimTxt="";
+    for(let i=0;i<ev.results.length;i++){
+      const r = ev.results[i];
+      if(r.isFinal) finalTxt += r[0].transcript;
+      else interimTxt += r[0].transcript;
+    }
+    ta.value = baseText + finalTxt + (interimTxt ? (finalTxt?" ":"")+interimTxt : "");
+    ta.scrollTop = ta.scrollHeight;
+  };
+  try{ recognizer.start(); }
+  catch(err){ toast("No se pudo iniciar el dictado: "+err.message); }
+}
+document.getElementById("noteMicBtn").addEventListener("click", startDictation);
+
+/* ============ IDEAS ============ */
+const SPARKS = [
+  "¿Y si esta idea funcionara al revés?",
+  "¿Qué pasaría si el problema fuera en realidad la solución?",
+  "Invierte el orden de los pasos: ¿qué pasa si empiezas por el final?",
+  "¿Qué haría esta idea si tuviera que fallar a propósito?",
+  "Cambia quién resuelve el problema: ¿y si el objeto resolviera al usuario?",
+  "¿Qué pasaría si esta idea fuera ilegal? ¿Seguiría teniendo sentido?",
+  "Convierte la ventaja principal en la mayor debilidad, y viceversa.",
+  "¿Qué versión de esta idea odiarías? Descríbela.",
+  "Si el tiempo corriera al revés, ¿cómo cambiaría esta idea?",
+  "¿Qué pasa si el usuario y el creador intercambian su papel?",
+  "Combina dos de tus proyectos actuales en uno solo.",
+  "Une esta idea con algo de la naturaleza: ¿qué animal o planta la resolvería?",
+  "Mezcla esta idea con un oficio antiguo (herrero, tejedor, relojero).",
+  "¿Qué pasa si combinas esta idea con música?",
+  "Junta esta idea con un recuerdo de infancia.",
+  "¿Qué tienen en común esta idea y una receta de cocina?",
+  "Combínala con el clima: ¿cómo sería en invierno? ¿en tormenta?",
+  "Fusiona esta idea con un juego de mesa clásico.",
+  "¿Qué pasaría si esta idea y tu peor hábito trabajaran juntos?",
+  "Une dos palabras al azar de tu alrededor a esta idea.",
+  "Reduce la idea a una sola palabra. Ahora exprándela de nuevo.",
+  "¿Cómo sería esta idea si solo pudieras usar tres materiales?",
+  "Quítale el presupuesto: ¿sigue funcionando con cero dinero?",
+  "¿Qué pasa si solo tienes 60 segundos para explicarla?",
+  "Elimina la parte más cara. ¿Qué queda?",
+  "¿Cómo la resolverías sin electricidad?",
+  "Redúcela a un solo gesto con las manos.",
+  "¿Qué pasa si solo puedes usar círculos para construirla?",
+  "Quita el texto por completo: ¿se entiende solo con imágenes?",
+  "¿Cuál es la versión más pequeña posible de esta idea?",
+  "¿Qué problema resolvería esto dentro de 10 años?",
+  "Hazla 100 veces más grande. ¿Sigue teniendo sentido?",
+  "¿Cómo sería si la usaran mil millones de personas?",
+  "Imagina esta idea ocupando toda una ciudad.",
+  "¿Qué pasaría si durara para siempre?",
+  "Llévala al espacio: ¿funcionaría en gravedad cero?",
+  "¿Cómo se vería en 200 años, ya sin ti para explicarla?",
+  "Multiplícala: ¿qué pasa si existen mil versiones diferentes a la vez?",
+  "¿Qué pasa si se volviera un monumento?",
+  "Expándela hasta que se vuelva una tradición cultural.",
+  "Pregúntate: ¿qué haría Da Vinci con esto?",
+  "Dibuja la idea antes de escribirla.",
+  "Obsérvala como si fuera una máquina: ¿qué piezas tiene?",
+  "¿Qué parte de esto ya existe en la naturaleza?",
+  "Diseña la versión \"cuaderno de bocetos\" de esta idea, sin pulir nada.",
+  "¿Cómo la explicarías usando solo un diagrama, sin palabras?",
+  "Anota la versión imposible de la idea, sin restricciones.",
+  "¿Qué proporciones tiene esta idea? ¿Es simétrica, orgánica, geométrica?",
+  "Diseca la idea: separa cada parte y ponle nombre.",
+  "¿Qué estudio previo necesitarías hacer antes de construirla?",
+  "Cambia el público objetivo: ¿y si fuera para niños?",
+  "¿Cómo la usaría alguien de 80 años?",
+  "¿Y si fuera solo para expertos?",
+  "Diséñala para alguien que no puede ver.",
+  "¿Cómo cambiaría si el usuario estuviera siempre apurado?",
+  "Piénsala para una sola persona muy específica que conozcas.",
+  "¿Qué pasa si el usuario es tu peor crítico?",
+  "Adáptala para alguien que la usará una sola vez en su vida.",
+  "¿Cómo la explicarías a alguien de hace 500 años?",
+  "¿Y si el usuario fuera un animal?",
+  "Convierte la idea en una pregunta sin respuesta todavía.",
+  "¿Qué pregunta esconde esta idea que aún no te has hecho?",
+  "¿Qué es lo que no sabes que no sabes sobre esto?",
+  "¿Cuál sería la pregunta que un niño de 5 años haría sobre esto?",
+  "¿Qué duda te da más miedo responder sobre esta idea?",
+  "Si solo pudieras hacer una pregunta sobre esto, ¿cuál sería?",
+  "¿Qué pasaría si la pregunta importara más que la respuesta?",
+  "¿Qué parte de esto todavía no entiendes tú mismo?",
+  "¿Qué pregunta le harías a la versión futura de esta idea?",
+  "¿Qué no te atreves a preguntar sobre esta idea?",
+  "¿Cómo sería si estuviera hecha de papel?",
+  "Imagínala tallada en piedra.",
+  "¿Y si solo pudiera existir como sonido?",
+  "Constrúyela con hilo y aguja.",
+  "¿Cómo se sentiría al tacto, con los ojos cerrados?",
+  "Piénsala como un olor, no como un objeto.",
+  "¿Qué pasa si solo existe como sombra?",
+  "Dale una textura: áspera, suave, fría, cálida.",
+  "¿Cómo la construirías con lo que tienes en tu cocina ahora mismo?",
+  "Imagina que solo puede transmitirse hablando, nunca por escrito.",
+  "¿Cómo era esta idea hace 100 años, si hubiera existido?",
+  "¿Qué versión de esto necesitarás en 5 años?",
+  "Diséñala para que dure solo un día.",
+  "¿Qué pasa si solo puede usarse de noche?",
+  "Piénsala como un ritual que se repite cada semana.",
+  "¿Cómo cambia si solo tienes una oportunidad para hacerla bien?",
+  "¿Qué parte de esta idea ya es obsoleta sin que lo notes?",
+  "Imagina el primer prototipo torpe de esta idea.",
+  "¿Cuál sería la versión de esta idea en cámara lenta?",
+  "¿Qué pasa si el tiempo fuera tu único recurso, sin dinero?",
+  "¿Qué emoción quieres que sienta quien la use?",
+  "¿Cómo sería esta idea si viniera del miedo en vez de la curiosidad?",
+  "Dale un sentido del humor a la idea.",
+  "¿Qué pasa si tuviera que hacer llorar a alguien, de la buena manera?",
+  "¿Qué recuerdo evoca esta idea sin que lo hayas planeado?",
+  "¿Cómo se sentiría si fuera un regalo?",
+  "¿Qué la haría sentir como un secreto compartido?",
+  "Diséñala para calmar la ansiedad de alguien.",
+  "¿Qué parte de ti mismo estás poniendo en esta idea?",
+  "¿Qué pasaría si esta idea tuviera que sorprender a su propio creador?",
+  "¿Cuál es la peor versión posible de esta idea?",
+  "¿Qué pasa si falla por completo? ¿Qué aprenderías?",
+  "Diseña la idea asumiendo que se va a romper.",
+  "¿Qué parte de esto te da más miedo mostrar a otros?",
+  "¿Qué pasaría si la abandonaras justo cuando iba mejor?",
+  "¿Cuál es el peor consejo que podrías seguir con esta idea?",
+  "¿Qué pasa si el error es en realidad el punto central?",
+  "Imagina que la presentas y nadie reacciona. ¿Qué haces después?",
+  "¿Qué parte de la idea sobreviviría un desastre total?",
+  "¿Qué estás evitando preguntarte por miedo a la respuesta?",
+  "¿Cómo se ve esta idea desde arriba, como un mapa?",
+  "Cuéntala desde el punto de vista de un objeto dentro de ella.",
+  "¿Cómo la vería alguien que la usa sin saber para qué sirve?",
+  "Explícala como si fuera un mito o una leyenda.",
+  "¿Qué pasaría si la contaras al revés, del final al principio?",
+  "¿Cómo se ve esta idea desde la luna?",
+  "Cuéntala como si fuera un secreto de familia.",
+  "¿Qué pasa si la mira alguien que nunca ha visto algo parecido?",
+  "Piensa en ella como si fuera un personaje con personalidad propia.",
+  "¿Qué pasaría si tuviera que explicarse a sí misma, sin ti?",
+  "¿Cuál es la esencia de esta idea si le quitas todo lo demás?",
+  "Si solo pudieras salvar una parte de la idea, ¿cuál sería?",
+  "¿Qué la hace realmente diferente de algo que ya existe?",
+  "¿Qué parte de esto es solo decoración, sin función real?",
+  "Encuentra la regla más simple que explique toda la idea.",
+  "¿Qué pasaría si la reduces a un símbolo?",
+  "¿Cuál es la versión \"de bolsillo\" de esta idea?",
+  "¿Qué palabra la resume mejor que cualquier explicación?",
+  "Si tuvieras que dibujarla en una servilleta, ¿cómo se vería?",
+  "¿Qué parte de la idea podrías explicar sin usar palabras técnicas?",
+  "¿Qué pasaría si esta idea tuviera sonido propio? ¿Cómo sonaría?",
+  "Diseña una versión de esta idea que solo funcione en equipo.",
+  "¿Qué pasa si la única regla es que tiene que ser honesta?",
+  "Imagina que esta idea es un lugar: ¿cómo se llama y cómo se llega?",
+  "¿Qué pasaría si tuviera que competir contra tu propia mejor idea anterior?",
+  "Dale un color que la represente y explica por qué.",
+  "¿Qué pasa si el usuario nunca puede verla completa, solo por partes?",
+  "¿Cómo cambiaría si tuviera un límite de tiempo diario para usarse?",
+  "¿Qué versión de esta idea construirías con tus propias manos, sin herramientas?",
+  "Piensa en la idea como una pregunta que le harías a un maestro antiguo.",
+  "¿Qué pasaría si tuviera que transmitirse de generación en generación?",
+  "¿Qué parte de la idea depende de la suerte y cuál del esfuerzo?",
+  "Si esta idea tuviera un lema, ¿cuál sería?",
+  "¿Qué pasa si nadie más puede saber que la creaste tú?",
+  "Imagina que esta idea tiene que convivir con su opuesto exacto.",
+  "¿Qué pasaría si tuvieras que enseñarla antes de terminarla?",
+  "¿Cuál sería el ritual de inicio antes de usar esta idea?",
+  "¿Qué parte de la idea es en realidad sobre ti, no sobre el problema?",
+  "Si la idea pudiera hablar, ¿qué te pediría que cambiaras?",
+  "¿Qué pregunta te gustaría que alguien más te hiciera sobre esta idea, dentro de un año?"
+];
+document.getElementById("sparkBtn").addEventListener("click", ()=>{
+  const candleIcon = document.getElementById("candleIcon");
+  candleIcon.classList.remove("flicker");
+  void candleIcon.offsetWidth;
+  candleIcon.classList.add("flicker");
+  tone(320, 480, .04);
+  setTimeout(()=>{
+    const s = SPARKS[Math.floor(Math.random()*SPARKS.length)];
+    document.getElementById("ideaInput").value = s + "\n\n";
+    document.getElementById("diceRerollBtn").style.display = "flex";
+    openModal("ideaModalBg");
+    document.getElementById("ideaInput").focus();
+  }, 300);
+});
+document.getElementById("diceRerollBtn").addEventListener("click", ()=>{
+  const diceIcon = document.getElementById("diceIcon");
+  diceIcon.classList.remove("rolling");
+  void diceIcon.offsetWidth;
+  diceIcon.classList.add("rolling");
+  tone(320, 480, .04);
+  setTimeout(()=>{
+    const s = SPARKS[Math.floor(Math.random()*SPARKS.length)];
+    document.getElementById("ideaInput").value = s + "\n\n";
+    document.getElementById("ideaInput").focus();
+  }, 620);
+});
+document.getElementById("micFab"); // (notes fab reused elsewhere)
+
+// allow manual add idea via long-press on ideas title area — simpler: add button in board
+(function addIdeaBtn(){
+  const board = document.getElementById("ideasList");
+})();
+const ideaAddBtn = document.createElement("button");
+ideaAddBtn.className="idea-capture-btn";
+ideaAddBtn.innerHTML = `
+  <span class="dice-icon">
+    <svg viewBox="0 0 24 24">
+      <path d="M9 3h6"/>
+      <path d="M9 3v3.2L6 9v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9l-3-3.2V3"/>
+      <path class="jar-spark" d="M12 12.3l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 14.4l2-.3z"/>
+    </svg>
+  </span>
+  <span>+ Capturar idea<span class="spark-caption">ya sé exactamente qué anotar</span></span>
+`;
+ideaAddBtn.addEventListener("click", ()=>{
+  document.getElementById("ideaInput").value="";
+  document.getElementById("diceRerollBtn").style.display = "none";
+  openModal("ideaModalBg");
+});
+document.getElementById("sparkBtn").insertAdjacentElement("afterend", ideaAddBtn);
+
+document.getElementById("saveIdeaBtn").addEventListener("click", ()=>{
+  const text = document.getElementById("ideaInput").value.trim();
+  if(!text){ toast("La idea está vacía"); return; }
+  const tagV = document.getElementById("ideaTag").value.trim();
+  db.ideas.push({ id:Date.now(), text, tag:tagV, created:Date.now(), touched:Date.now(), color:randIdeaColor() });
+  save();
+  document.getElementById("ideaTag").value="";
+  closeModal("ideaModalBg");
+  renderIdeas(); renderHome();
+  toast("Idea capturada"); playCrystalChime();
+});
+const IDEA_COLORS = ["rgba(201,154,63,.10)","rgba(79,156,156,.10)","rgba(124,138,94,.10)","rgba(181,83,60,.10)"];
+function randIdeaColor(){
+  return IDEA_COLORS[Math.floor(Math.random()*IDEA_COLORS.length)];
+}
+// solo acepta uno de los colores conocidos; cualquier otro valor persistido se descarta
+function safeIdeaColor(c){
+  return IDEA_COLORS.includes(c) ? c : IDEA_COLORS[0];
+}
+function renderIdeas(){
+  const list = document.getElementById("ideasList");
+  if(!db.ideas.length){ list.innerHTML = `<div class="empty">Tu cuaderno de ideas está vacío. Usa "Generar una chispa" cuando no sepas por dónde empezar.</div>`; return; }
+  list.innerHTML="";
+  [...db.ideas].sort((a,b)=>b.created-a.created).forEach((idea,i)=>{
+    const el=document.createElement("div"); el.className="idea-card";
+    el.style.setProperty("--r", ((i%2===0?-1:1) * (1+Math.random()*1.2)).toFixed(2)+"deg");
+    el.style.background = safeIdeaColor(idea.color);
+    el.innerHTML = `<div class="idea-txt">${escapeHtml(idea.text)}</div>
+      <div class="row" style="justify-content:space-between; margin-top:8px;">
+        ${idea.tag?`<span class="idea-tag tag">${escapeHtml(idea.tag)}</span>`:'<span></span>'}
+        <button class="note-del" data-id="${escapeHtml(String(idea.id))}">✕</button>
+      </div>`;
+    el.querySelector(".note-del").addEventListener("click", ()=>{
+      db.ideas = db.ideas.filter(x=>x.id!==idea.id); save(); renderIdeas(); renderHome();
+    });
+    list.appendChild(el);
+  });
+}
+
+/* ============ POEMAS ============ */
+let currentTpl = "libre";
+const tplChips = document.querySelectorAll(".tpl-chip");
+tplChips.forEach(c=> c.addEventListener("click", ()=>{
+  tplChips.forEach(x=>x.classList.remove("active")); c.classList.add("active");
+  currentTpl = c.dataset.tpl; renderPoemEditor();
+  document.getElementById("poemTopicBox").style.display = "none";
+}));
+
+function countSyllablesEs(word){
+  word = word.toLowerCase().replace(/[^a-záéíóúüñ]/g,"");
+  if(!word) return 0;
+  const vowels = "aeiouáéíóúü";
+  let count=0, prevVowel=false;
+  for(const ch of word){
+    const isV = vowels.includes(ch);
+    if(isV && !prevVowel) count++;
+    prevVowel = isV;
+  }
+  return Math.max(count,1);
+}
+function countLineSyllables(line){
+  const words = line.trim().split(/\s+/).filter(Boolean);
+  return words.reduce((s,w)=>s+countSyllablesEs(w),0);
+}
+
+function renderPoemEditor(){
+  const box = document.getElementById("poemEditor");
+  box.innerHTML="";
+  box.dataset.tpl = currentTpl;
+
+  function makeStanza(labelText, rhymeLetters, syllTarget){
+    const st = document.createElement("div"); st.className="stanza";
+    st.innerHTML = `<div class="stanza-label"><span>${labelText}</span>${syllTarget?`<span>objetivo: ${syllTarget} síl.</span>`:''}</div>`;
+    rhymeLetters.forEach((letter)=>{
+      const line = document.createElement("div"); line.className="verse-line";
+      line.innerHTML = `<span class="rhyme-letter">${letter}</span><input type="text" class="verse-input"><span class="syll-count">0</span>`;
+      const input = line.querySelector("input"), sc = line.querySelector(".syll-count");
+      input.addEventListener("input", ()=>{
+        const n = countLineSyllables(input.value);
+        sc.textContent = n;
+        sc.style.color = (syllTarget && n===syllTarget) ? "var(--sage)" : (syllTarget? "var(--terracotta)":"var(--parchment-dim)");
+      });
+      st.appendChild(line);
+    });
+    box.appendChild(st);
+  }
+
+  if(currentTpl==="libre"){
+    box.innerHTML = `<p style="font-size:12.5px; color:var(--parchment-dim); margin-top:0;">Sin estructura fija. Escribe con libertad; cada línea es un verso nuevo.<br><i style="opacity:.8;">Ejemplo: "Guardo tu nombre / donde nadie busca / y ahí se queda, quieto, / esperando que vuelvas a leerlo."</i></p>`;
+    const ta = document.createElement("textarea"); ta.rows=10; ta.placeholder="Escribe tu poema, verso a verso...";
+    box.appendChild(ta);
+  } else if(currentTpl==="haiku"){
+    box.innerHTML = `<p style="font-size:12.5px; color:var(--parchment-dim); margin-top:0;">Estructura tradicional japonesa: 3 versos, 5-7-5 sílabas. Ideal para capturar una sola imagen.<br><i style="opacity:.8;">Ejemplo: "Cae la tarde / un pájaro se queda / mirando el río."</i></p>`;
+    makeStanza("Haiku", ["1","2","3"], null);
+    // set targets manually per line
+    const lines = box.querySelectorAll(".verse-line");
+    const targets=[5,7,5];
+    lines.forEach((l,i)=>{
+      l.querySelector(".stanza-label");
+      l.querySelector("input").addEventListener("input", (e)=>{
+        const n=countLineSyllables(e.target.value);
+        const sc = l.querySelector(".syll-count");
+        sc.textContent=n; sc.style.color = n===targets[i]?"var(--sage)":"var(--terracotta)";
+      });
+      l.insertAdjacentHTML("beforeend","");
+      l.querySelector(".rhyme-letter").textContent = targets[i];
+    });
+  } else if(currentTpl==="soneto"){
+    box.innerHTML = `<p style="font-size:12.5px; color:var(--parchment-dim); margin-top:0;">14 versos endecasílabos (11 síl.) en dos cuartetos ABBA y dos tercetos.<br><i style="opacity:.8;">Ejemplo (verso A): "No sé si el tiempo cura o solo espera..."</i></p>`;
+    makeStanza("Cuarteto I", ["A","B","B","A"], 11);
+    makeStanza("Cuarteto II", ["A","B","B","A"], 11);
+    makeStanza("Terceto I", ["C","D","C"], 11);
+    makeStanza("Terceto II", ["D","C","D"], 11);
+  } else if(currentTpl==="copla"){
+    box.innerHTML = `<p style="font-size:12.5px; color:var(--parchment-dim); margin-top:0;">4 versos octosílabos (8 síl.), rima en versos pares. Estructura popular española.<br><i style="opacity:.8;">Ejemplo: "Quien mucho promete y calla / poco cumple, dicen por ahí."</i></p>`;
+    makeStanza("Copla", ["-","A","-","A"], 8);
+  } else if(currentTpl==="acrostico"){
+    box.innerHTML = `<p style="font-size:12.5px; color:var(--parchment-dim); margin-top:0; line-height:1.5;">
+      Elige una palabra (tu nombre, una emoción, lo que quieras). Cada una de sus letras se convierte en el inicio de un verso nuevo — si tu palabra tiene 4 letras, tu poema tendrá 4 versos.
+      Al final, si lees solo la primera letra de cada verso de arriba hacia abajo, vuelve a formar la palabra.
+      <br><br><i style="opacity:.8;">Ejemplo con "LUZ" (3 letras → 3 versos):<br>
+      <b>L</b>ejos brilla algo que no se apaga<br><b>U</b>n destello que encuentra su camino<br><b>Z</b>igzaguea hasta llegar a ti</i>
+    </p>
+      <input type="text" id="acroWord" placeholder="Palabra clave (ej: LEONARDO)" style="margin-bottom:10px;">`;
+    const wordInput = box.querySelector("#acroWord");
+    const linesBox = document.createElement("div"); box.appendChild(linesBox);
+    function build(){
+      const w = (wordInput.value||"").toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g,"");
+      linesBox.innerHTML="";
+      [...w].forEach(letter=>{
+        const line=document.createElement("div"); line.className="verse-line";
+        line.innerHTML = `<span class="rhyme-letter">${letter}</span><input type="text" placeholder="${letter}...">`;
+        linesBox.appendChild(line);
+      });
+    }
+    wordInput.addEventListener("input", build);
+  }
+}
+renderPoemEditor();
+
+/* ---------- dado de inspiración por formato: genera un poema completo con la estructura activa ---------- */
+
+// Verso libre: banco de poemas cortos completos
+const LIBRE_POEMS = [
+  ["Guardo tu nombre","donde nadie busca,","y ahí se queda, quieto,","esperando que vuelvas a leerlo."],
+  ["El silencio también habla,","solo que en un idioma","que aprendemos tarde."],
+  ["Hay puertas que no se cierran,","se quedan entreabiertas","por si alguien vuelve a tocar."],
+  ["No fue el tiempo el que se fue,","fuimos nosotros","quienes dejamos de mirarlo."],
+  ["Guardo tus cartas","en un cajón que no abro,","como quien guarda brasas","con miedo a que se apaguen."],
+  ["La memoria no olvida,","solo esconde","lo que aún no sabemos leer."],
+  ["Un día seremos el recuerdo","de alguien que hoy no conocemos,","y estará bien así."],
+  ["El mar no pregunta nada,","solo se queda","repitiendo lo mismo, distinto."],
+  ["A veces basta una ventana","para saber que el mundo","sigue ahí, aunque no lo mires."],
+  ["No busques la respuesta","en lo que se dijo,","búscala en lo que se calló."],
+  ["Aprendí a despedirme","sin cerrar del todo la puerta,","por si el destino cambia de opinión."],
+  ["Cada casa guarda un fantasma","que no asusta,","solo espera ser recordado."],
+  ["El café se enfría","mientras decides","si vale la pena decir lo que sientes."],
+  ["No todo lo que se pierde","desaparece,","a veces solo cambia de lugar."],
+  ["Hay canciones que duelen","no por lo que dicen,","sino por cuándo las escuchaste."],
+  ["El tiempo no cura,","solo enseña","a cargar distinto el peso."],
+  ["Una fotografía vieja","no guarda el pasado,","guarda la manera en que aún nos duele."],
+  ["A veces el silencio","es la forma más honesta","de decir todo lo que falta."]
+];
+
+// Haiku: matriz de versos verificados con el contador de la app (5 / 7 / 5)
+const HAIKU_5 = ["El viento pasa","Silencio puro","Una hoja cae","Llueve despacio","Todo se calla","Nace el rocío","Un ave vuela","El campo duerme","El mar respira","Un grillo canta","Tiembla la rama","Se abre la flor","Pasa la brisa","Cae la ceniza","Duerme la aldea","Tiembla la llama","Cruza la sombra"];
+const HAIKU_7 = ["Un pájaro se queda","Mirando el río correr","Un barco cruza la mar","La luna cae en el mar","La tarde cae sin ruido","Un río cruza la aldea","Un ave cae en el mar","La luna busca la mar","La brisa besa la mar","La nieve cae sin ruido","Un río corre sin prisa","El fuego cae sin ruido","La tarde busca la mar","El musgo cae sin ruido","La sombra cae sin ruido","El campo busca la mar","Un ciervo busca la mar","El viento cae sin ruido"];
+
+// Copla: grupos de rima (versos 2 y 4) verificados a 8 sílabas + versos libres (1 y 3)
+const COPLA_RIMAS = {
+  mar: ["La luna sale en el mar","Un río corre hasta el mar","La vida es como la mar","La sal se queda en el mar","La espuma sube del mar"],
+  on:  ["Nada cura esta pasión","El olvido es la razón","Guarda todo el corazón"],
+  ia:  ["Todo lo cura un buen día","Se cura todo con el día","Llega la calma algún día","El amor crece día a día"]
+};
+const COPLA_LIBRES = ["El viento mueve las hojas","Un río baja de la sierra","Un niño sueña con volar","La luna sale en el mar","Un río corre hasta el mar","Nada cura esta pasión","El olvido es la razón","Todo lo cura un buen día","Llega la calma algún día"];
+
+// Soneto: banco curado de ejemplos completos (14 versos, ABBA ABBA CDC DCD)
+// Nota: por la rima y métrica estrictas, este banco es más pequeño que los demás — se puede ampliar cuando quieras.
+const SONETO_POEMS = [
+  ["No sé si el tiempo cura o solo espera","a que el dolor se canse de doler","y un día, sin avisos, al caer","la tarde, deje de pesar por fuera.",
+   "Camino con los pasos que antes era,","sin saber bien si vuelvo o si me pierdo,","buscando en cada esquina algún recuerdo","que aún tenga tu perfume en la vereda.",
+   "Y aunque el silencio a veces me pregunta","si vale la pena seguir esperando,","respondo con los ojos, no con nada.",
+   "El corazón no entiende bien la cuenta","y sigue, ciego, siempre caminando","detrás de una verdad ya sepultada."],
+  ["Se marchitó la flor que no regué","por miedo a que creciera más de prisa,","y hoy busco entre cenizas y entre risa","la forma de aquel nombre que callé.",
+   "Tal vez el tiempo es todo lo que fue,","un cuarto donde el eco no se avisa,","y aunque el reloj insiste y no hay más brisa","la ausencia sigue firme en lo que amé.",
+   "No pido que regrese lo perdido,","ni que la herida cierre por completo,",
+   "me basta con saber que fue vivido.","Que hubo un instante, un gesto, un solo indicio","de que el amor, aunque se vuelva quieto,","dejó su huella en todo lo que dijo."],
+  ["La duda es esa sombra que no cede","ni cuando el sol insiste en su porfía,","se queda ahí, tan quieta y tan sombría","que hasta el silencio, a veces, no la puede.",
+   "Camino hacia adelante, y aunque quede","un poco de temor por lo que había,","prefiero equivocarme en pleno día","que estar sin dar un paso, quien lo sabe.",
+   "El corazón no pide certidumbre,","le basta con saber que sigue entero","al enfrentar la duda y su costumbre.",
+   "Y aunque el destino cambie de bandera,","seguiré caminando, prisionero","de esta fe que nadie considera."],
+  ["El mar no olvida nada de lo hundido,","lo guarda en su silencio para siempre,","y aunque la orilla cambie y aunque temple","el tiempo cada golpe recibido.",
+   "Así también el alma, malherido","su centro, sigue firme y no se siente","vencida, aunque la ausencia esté presente","como una piedra en el zapato erguido.",
+   "No hay más consuelo que seguir el paso,","aunque la herida insista en su reclamo,",
+   "y el corazón no encuentre buen ocaso.","Porque el amor, aunque se vuelva escaso,","deja una luz que no se apaga en vano","y sigue ardiendo aunque no haya regazo."]
+];
+
+// Acróstico: banco de ejemplos completos (palabra + versos ya construidos)
+const ACROSTIC_EXAMPLES = [
+  {word:"LUZ", lines:["Lejos brilla algo que no se apaga","Un destello que encuentra su camino","Zigzaguea hasta llegar a ti"]},
+  {word:"MAR", lines:["Muchas mareas ha visto pasar","Al fondo guarda lo que el cielo olvida","Regresa siempre a la misma orilla"]},
+  {word:"SOL", lines:["Sube despacio sobre la montaña","Ofrece luz a quien la necesita","Larga es su tarea, corta su despedida"]},
+  {word:"FE", lines:["Firme se sostiene aunque no vea","Espera lo que la razón no explica"]},
+  {word:"PAZ", lines:["Prefiere el silencio antes que la guerra","Ansía un lugar donde nadie se hiera","Zurce las heridas que deja la tierra"]},
+  {word:"AMOR", lines:["Aparece cuando menos se le espera","Muchas veces se disfraza de costumbre","Otras se queda solo en lo que pudo ser","Resiste, o no, pero siempre deja huella"]},
+  {word:"IDEA", lines:["Ignora al principio si tiene sentido","Después se aferra y no te suelta","Espera su momento en silencio","Al final, insiste en nacer"]},
+  {word:"CASA", lines:["Cobija más que cuerpos, guarda historias","Alberga risas que ya nadie recuerda","Se queda quieta esperando que regreses","Aunque cambien los nombres en la puerta"]},
+  {word:"RÍO", lines:["Repite su camino sin cansarse","Insiste en llegar aunque lo desvíen","Olvida rápido, pero nunca se detiene"]},
+  {word:"VIDA", lines:["Viene sin aviso y se queda a medias","Insiste en enseñar aunque duela","Da más de lo que promete","Arde despacio, como una vela"]},
+  {word:"CIELO", lines:["Cambia de color sin pedir permiso","Insiste en estar aunque no lo mires","Esconde estrellas que aún no ves","Late despacio, como el mar","Ofrece calma a quien lo necesita"]},
+  {word:"NOCHE", lines:["Nadie la ve llegar, pero llega","Oculta lo que el día no se atreve","Cubre con calma lo que el ruido rompe","Habla bajito, casi en secreto","Espera a que amanezca sin prisa"]},
+  {word:"HOGAR", lines:["Huele a algo que no sabes nombrar","Ofrece calma sin pedir nada a cambio","Guarda tus pasos aunque te vayas lejos","Alberga lo que ya no cabe en palabras","Regresa siempre, aunque tú no vuelvas"]},
+  {word:"SUEÑO", lines:["Se escapa apenas abres los ojos","Une lo que el día separa","Espera paciente otra noche más","Ñoño o profundo, siempre regresa","Otra vez, como si nunca se hubiera ido"]},
+  {word:"ARTE", lines:["Aparece donde menos se le busca","Resiste al tiempo mejor que la piedra","Toma forma de lo que no se dice","Existe, aunque nadie lo esté mirando"]}
+];
+
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function pickTwoDistinct(arr){
+  if(arr.length<2) return [arr[0], arr[0]];
+  const i = Math.floor(Math.random()*arr.length);
+  let j = Math.floor(Math.random()*arr.length);
+  while(j===i) j = Math.floor(Math.random()*arr.length);
+  return [arr[i], arr[j]];
+}
+function fillIfEmpty(inputs, lines){
+  const allEmpty = Array.from(inputs).every(el=>!el.value.trim());
+  if(!allEmpty) return false;
+  inputs.forEach((el,i)=>{
+    el.value = lines[i] || "";
+    el.dispatchEvent(new Event("input"));
+  });
+  return true;
+}
+
+function rollPoemTopic(){
+  const verseInputs = document.querySelectorAll("#poemEditor .verse-input");
+
+  if(currentTpl==="libre"){
+    const poem = pick(LIBRE_POEMS);
+    const ta = document.querySelector("#poemEditor textarea");
+    if(ta && !ta.value.trim()){
+      ta.value = poem.join("\n");
+      return "Ejemplo cargado — edítalo o bórralo para escribir el tuyo";
+    }
+    return "Ejemplo:\n" + poem.join("\n");
+  }
+
+  if(currentTpl==="haiku"){
+    const lines = [pick(HAIKU_5), pick(HAIKU_7), pick(HAIKU_5)];
+    if(fillIfEmpty(verseInputs, lines)) return "Ejemplo cargado — edítalo o bórralo para escribir el tuyo";
+    return "Ejemplo:\n" + lines.join("\n");
+  }
+
+  if(currentTpl==="copla"){
+    const grupo = pick(Object.values(COPLA_RIMAS));
+    const [rimaB, rimaD] = pickTwoDistinct(grupo);
+    const [libre1, libre3] = pickTwoDistinct(COPLA_LIBRES);
+    const lines = [libre1, rimaB, libre3, rimaD];
+    if(fillIfEmpty(verseInputs, lines)) return "Ejemplo cargado — edítalo o bórralo para escribir el tuyo";
+    return "Ejemplo:\n" + lines.join("\n");
+  }
+
+  if(currentTpl==="soneto"){
+    const poem = pick(SONETO_POEMS);
+    if(fillIfEmpty(verseInputs, poem)) return "Ejemplo cargado — edítalo o bórralo para escribir el tuyo";
+    return "Ejemplo:\n" + poem.join("\n");
+  }
+
+  if(currentTpl==="acrostico"){
+    const ex = pick(ACROSTIC_EXAMPLES);
+    const wordInput = document.getElementById("acroWord");
+    if(wordInput && !wordInput.value.trim()){
+      wordInput.value = ex.word;
+      wordInput.dispatchEvent(new Event("input"));
+      setTimeout(()=>{
+        const rows = document.querySelectorAll("#poemEditor .verse-line input");
+        rows.forEach((el,i)=>{ el.value = ex.lines[i] || ""; });
+      }, 0);
+      return "Ejemplo cargado — edítalo o bórralo para escribir el tuyo";
+    }
+    return `Ejemplo con "${ex.word}":\n` + ex.lines.join("\n");
+  }
+}
+
+document.getElementById("poemDiceBtn").addEventListener("click", ()=>{
+  const icon = document.getElementById("poemDiceIcon");
+  icon.classList.remove("rolling"); void icon.offsetWidth; icon.classList.add("rolling");
+  tone(320, 480, .04);
+  setTimeout(()=>{
+    const result = rollPoemTopic();
+    const box = document.getElementById("poemTopicBox");
+    box.style.whiteSpace = "pre-line";
+    box.textContent = "✦ " + result;
+    box.style.display = "block";
+  }, 620);
+});
+
+document.getElementById("savePoemBtn").addEventListener("click", ()=>{
+  const inputs = document.querySelectorAll("#poemEditor .verse-input, #poemEditor input[type=text]:not(#acroWord), #poemEditor textarea");
+  let lines = [];
+  inputs.forEach(el=>{ if(el.id!=="acroWord" && el.value.trim()) lines.push(el.value.trim()); });
+  if(!lines.length){ toast("El poema está vacío"); return; }
+  db.poems.push({ id:Date.now(), tpl:currentTpl, lines, created:Date.now() });
+  save();
+  renderPoemsList(); renderHome();
+  toast("Poema guardado"); playCrystalChime();
+});
+
+function renderPoemsList(){
+  const wrap = document.getElementById("poemsList");
+  if(!db.poems.length){ wrap.innerHTML = `<div class="empty">Aún no guardas ningún poema.</div>`; return; }
+  wrap.innerHTML="";
+  [...db.poems].sort((a,b)=>b.created-a.created).forEach(p=>{
+    const el=document.createElement("div"); el.className="card";
+    el.innerHTML = `<div class="note-meta" style="margin-bottom:6px;"><span class="tag">${escapeHtml(String(p.tpl||"")).toUpperCase()}</span></div>
+      <div style="font-size:14.5px; line-height:1.6; white-space:pre-wrap;">${p.lines.map(escapeHtml).join("\n")}</div>`;
+    const del=document.createElement("button"); del.className="note-del"; del.textContent="✕"; del.style.marginTop="6px";
+    del.addEventListener("click", ()=>{ db.poems=db.poems.filter(x=>x.id!==p.id); save(); renderPoemsList(); renderHome(); });
+    el.appendChild(del);
+    wrap.appendChild(el);
+  });
+}
+
+/* ============ HOME / ARCHIVO VIVO ============ */
+function renderHome(){
+  // saludo según la hora + fecha completa
+  const now0 = new Date();
+  const hr = now0.getHours();
+  const greeting = hr<6 ? "Buenas noches" : hr<12 ? "Buenos días" : hr<19 ? "Buenas tardes" : "Buenas noches";
+  document.getElementById("greetingText").textContent = greeting;
+  document.getElementById("greetingDate").textContent = now0.toLocaleDateString("es-MX", {weekday:"long", day:"numeric", month:"long"});
+
+  document.getElementById("statNotes").textContent = db.notes.length;
+  document.getElementById("statIdeas").textContent = db.ideas.length;
+  document.getElementById("statPoems").textContent = db.poems.length;
+  const todayStr = fmt(new Date());
+  const todays = [
+    ...db.events.filter(e=>e.date===todayStr).map(e=>({...e, isRoutine:false})),
+    ...routinesForDate(todayStr).map(r=>({...r, isRoutine:true}))
+  ];
+  document.getElementById("statToday").textContent = todays.length;
+
+  // medidor circular: cuántas actividades de hoy ya están hechas
+  const doneCount = todays.filter(ev=>{
+    const doneKey = ev.isRoutine ? (ev.id+"_"+todayStr) : null;
+    return ev.isRoutine ? !!db.routineDone[doneKey] : !!ev.done;
+  }).length;
+  const CIRC = 264;
+  const gaugeFill = document.getElementById("gaugeFill");
+  const pct = todays.length ? doneCount/todays.length : 0;
+  gaugeFill.style.strokeDashoffset = CIRC - (CIRC*pct);
+  document.getElementById("gaugeNum").textContent = doneCount+"/"+todays.length;
+  const gaugeCaption = document.getElementById("gaugeCaption");
+  gaugeCaption.textContent = !todays.length
+    ? "Nada agendado todavía — buen momento para una idea vieja"
+    : doneCount===todays.length
+      ? "Todo listo por hoy. Bien hecho."
+      : `Llevas ${doneCount} de ${todays.length} actividades de hoy`;
+
+  const agenda = document.getElementById("homeAgenda");
+  if(!todays.length){ agenda.innerHTML = `<div class="empty">Nada agendado para hoy. Ideal para atender una idea vieja.</div>`; }
+  else {
+    agenda.innerHTML="";
+    todays.sort((a,b)=>(a.time||"").localeCompare(b.time||"")).forEach(ev=>{
+      const doneKey = ev.isRoutine ? (ev.id+"_"+todayStr) : null;
+      const isDone = ev.isRoutine ? !!db.routineDone[doneKey] : !!ev.done;
+      const row=document.createElement("div"); row.className="agenda-item"+(isDone?" done":"");
+      row.innerHTML = `<button class="task-check${isDone?' checked':''}" title="Marcar como hecho"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></button><div class="agenda-time">${escapeHtml(ev.time||"--:--")}${ev.endTime?'–'+escapeHtml(ev.endTime):''}</div><div class="agenda-title">${escapeHtml(ev.title)}</div>${ev.isRoutine?'<div class="routine-badge">🔁</div>':''}${ev.alarm?'<div class="alarm-badge">⏰</div>':''}`;
+      row.querySelector(".task-check").addEventListener("click", ()=>{
+        if(ev.isRoutine){
+          db.routineDone[doneKey] = !db.routineDone[doneKey];
+        } else {
+          const target = db.events.find(x=>x.id===ev.id);
+          if(target) target.done = !target.done;
+        }
+        save(); playPaperClick(.1); renderHome();
+      });
+      agenda.appendChild(row);
+    });
+  }
+
+  // Archivo Vivo: resurface an old idea or note untouched for 4+ days
+  const THRESHOLD = 4*24*60*60*1000;
+  const now = Date.now();
+  const candidates = [
+    ...db.ideas.map(i=>({...i, kind:"idea"})),
+    ...db.notes.map(n=>({...n, kind:"nota", text:n.text}))
+  ].filter(x=> now - (x.touched||x.created) > THRESHOLD);
+  const box = document.getElementById("archiveBox");
+  if(candidates.length){
+    candidates.sort((a,b)=>(a.touched||a.created)-(b.touched||b.created));
+    const pick = candidates[0];
+    const days = Math.floor((now-(pick.touched||pick.created))/(24*60*60*1000));
+    box.style.display="block";
+    document.getElementById("archiveText").innerHTML =
+      `Hace <b>${days} días</b> guardaste esta ${pick.kind}: <br><i>"${escapeHtml(pick.text.slice(0,120))}${pick.text.length>120?'…':''}"</i><br>¿Sigue viva?`;
+  } else {
+    box.style.display="none";
+  }
+}
+
+/* ============ ALARMAS ============ */
+function requestNotifPermission(){
+  if("Notification" in window && Notification.permission==="default"){
+    Notification.requestPermission();
+  }
+}
+function checkAlarms(){
+  const now = new Date();
+  const nowDate = fmt(now);
+  const nowTime = now.toTimeString().slice(0,5);
+  db.events.forEach(ev=>{
+    if(ev.alarm && !ev.fired && ev.date===nowDate && ev.time && ev.time<=nowTime){
+      ev.fired = true; save();
+      fireAlarm(ev.title);
+    }
+  });
+  db.notes.forEach(n=>{
+    if(n.alarm && !n.fired && n.date===nowDate && n.time && n.time<=nowTime){
+      n.fired = true; save();
+      fireAlarm(n.text.slice(0,60));
+    }
+  });
+  routinesForDate(nowDate).forEach(r=>{
+    const key = r.id + "_" + nowDate;
+    if(r.alarm && !db.routineFired[key] && r.time && r.time<=nowTime){
+      db.routineFired[key] = true; save();
+      fireAlarm("🔁 " + r.title, true);
+    }
+  });
+}
+function fireAlarm(text, isRoutine){
+  document.getElementById("alarmBody").textContent = text;
+  openModal("alarmModalBg");
+  if(isRoutine) alarmSoundRoutine(); else alarmSound();
+  if("Notification" in window && Notification.permission==="granted"){
+    try{ new Notification("X-Codex Note Pro ⏰", {body:text}); }catch(e){}
+  }
+}
+document.getElementById("alarmDismiss").addEventListener("click", ()=> closeModal("alarmModalBg"));
+setInterval(checkAlarms, 20000);
+
+/* ============ EASTER EGG: 27 TAPS ============ */
+const bylineEl = document.getElementById("bylineTap");
+bylineEl.addEventListener("click", ()=>{
+  db.tapCount = (db.tapCount||0)+1; save();
+  if(db.tapCount===14){ bylineEl.classList.add("shake"); setTimeout(()=>bylineEl.classList.remove("shake"),300); }
+  if(db.tapCount===22){ bylineEl.classList.add("pulse"); setTimeout(()=>bylineEl.classList.remove("pulse"),400); }
+  if(db.tapCount>=27){
+    db.tapCount=0; db.easterUnlocked=true; save();
+    openKeyScreen();
+  }
+});
+
+/* ---------- El cuaderno de Leonardo: secciones temáticas hojeables ---------- */
+const CODEX_SECTIONS = [
+  {
+    key:"inventos", tab:"INVENTOS",
+    pages:[
+      {kind:"Máquina voladora · fol. 74", body:"Diseñó el ornitóptero estudiando el vuelo de las aves: alas que baten movidas por la fuerza de un hombre. Casi cuatrocientos años antes del primer avión."},
+      {kind:"Tornillo aéreo", body:"Una hélice de lino almidonado que debía enroscarse en el aire para elevarse. El antepasado dibujado del helicóptero."},
+      {kind:"El paracaídas", body:"Una pirámide de tela de doce brazos de ancho. Escribió que con ella un hombre podría lanzarse desde cualquier altura sin lastimarse. Siglos después alguien lo construyó: funcionaba."},
+      {kind:"Carro autopropulsado", body:"Un vehículo movido por ballestas tensadas, con dirección programable. Se le considera el primer robot móvil de la historia."},
+      {kind:"El escafandra", body:"Diseñó un traje de buceo con tubos de caña y máscara de cuero. Ocultó los planos: temía que se usara para hundir barcos con hombres dentro."},
+      {kind:"Puente giratorio", body:"Un puente que rotaba sobre sí mismo para dejar pasar los barcos. Lo propuso a Ludovico Sforza junto con máquinas de guerra que nunca quiso construir del todo."}
+    ]
+  },
+  {
+    key:"poemas", tab:"POEMAS",
+    pages:[
+      {kind:"Fábula · la piedra", body:"<span class='verse'>Una piedra bajó del monte al camino,<br>cansada de la soledad de las flores.<br>Allí quedó, molida por las ruedas,<br>añorando el silencio que dejó atrás.</span><cite>Fábula de Leonardo, versión libre</cite>"},
+      {kind:"Fábula · la mariposa", body:"<span class='verse'>Atraída por el resplandor de la llama,<br>giró y giró creyéndolo hermoso.<br>Cuando entendió que ardía,<br>ya no le quedaban alas para huir.</span><cite>Fábula de Leonardo, versión libre</cite>"},
+      {kind:"Adivinanza", body:"<span class='verse'>Aparecerán figuras enormes de forma humana<br>que, cuanto más te acerques a ellas,<br>más disminuirán su tamaño aparente.</span><cite>Profecía de Leonardo: la sombra de un hombre</cite>"},
+      {kind:"Fábula · el papel", body:"<span class='verse'>La hoja blanca se lamentaba de la tinta<br>que vino a manchar su pureza.<br>Pero fue la tinta la que la salvó del fuego,<br>porque nadie quema una página que dice algo.</span><cite>Fábula de Leonardo, versión libre</cite>"},
+      {kind:"Sobre el tiempo", body:"<span class='verse'>El agua que tocas en los ríos<br>es la última de la que se fue<br>y la primera de la que viene.<br>Así es el día presente.</span><cite>Leonardo da Vinci</cite>"}
+    ]
+  },
+  {
+    key:"filosofia", tab:"FILOSOFÍA",
+    pages:[
+      {kind:"Sobre la experiencia", body:"\"La sabiduría es hija de la experiencia.\"<cite>Leonardo da Vinci</cite>"},
+      {kind:"Sobre la vida bien usada", body:"\"Así como una jornada bien empleada produce un dulce sueño, así una vida bien usada causa una dulce muerte.\"<cite>Leonardo da Vinci</cite>"},
+      {kind:"Sobre la simplicidad", body:"\"La simplicidad es la máxima sofisticación.\"<cite>Atribuido a Leonardo da Vinci</cite>"},
+      {kind:"Sobre el obstáculo", body:"\"Los obstáculos no me doblegan. Todo obstáculo cede ante una firme resolución.\"<cite>Leonardo da Vinci</cite>"},
+      {kind:"Sobre saber y hacer", body:"\"Saber no es suficiente; debemos aplicar. Querer no es suficiente; debemos hacer.\"<cite>Atribuido a Leonardo da Vinci</cite>"},
+      {kind:"Sobre el juicio", body:"\"El mayor engaño que sufren los hombres proviene de sus propias opiniones.\"<cite>Leonardo da Vinci</cite>"}
+    ]
+  },
+  {
+    key:"preguntas", tab:"PREGUNTAS",
+    pages:[
+      {kind:"Anotación al margen", body:"¿Por qué el cielo es azul?"},
+      {kind:"Anotación al margen", body:"Describe la lengua del pájaro carpintero."},
+      {kind:"Anotación al margen", body:"¿Por qué el pez en el agua es más veloz que el pájaro en el aire, cuando debería ser lo contrario?"},
+      {kind:"Anotación al margen", body:"¿Qué es un bostezo? ¿Por qué se contagia entre los hombres?"},
+      {kind:"Anotación al margen", body:"Pregunta al maestro de ábaco cómo se cuadra un triángulo. Averigua sobre la medición del sol. Prometieron mostrármelo."},
+      {kind:"Anotación al margen", body:"¿Por qué los perros olfatean con gusto el trasero de otros perros?"}
+    ]
+  },
+  {
+    key:"vida", tab:"SU VIDA",
+    pages:[
+      {kind:"La escritura en espejo", body:"Escribía de derecha a izquierda, con las letras invertidas. Sus cuadernos solo se leen bien frente a un espejo. Era zurdo: tal vez así evitaba manchar la tinta fresca."},
+      {kind:"Ho perduto tempo", body:"\"He perdido el tiempo.\" Lo escribió él mismo en un margen, entre inventos que cambiarían el mundo. También los genios dudan de su propio día."},
+      {kind:"La libreta del cinturón", body:"Cargaba una libreta pequeña colgada del cinturón, siempre lista para una idea repentina en plena calle. Justo lo que ahora llevas en el bolsillo."},
+      {kind:"Salaì, el pequeño diablo", body:"A su aprendiz Gian Giacomo lo apodó Salaì: le robaba, mentía y causaba líos sin parar. Lo mantuvo a su lado casi treinta años."},
+      {kind:"Las páginas perdidas", body:"De las más de veintiocho mil páginas que se calcula que escribió, apenas sobrevive la mitad. El resto se perdió para siempre."},
+      {kind:"La Sala delle Asse", body:"El salón que pintó en el Castillo Sforzesco de Milán quedó cubierto de cal y olvidado durante siglos, hasta que alguien volvió a mirar. Una habitación descubierta."},
+      {kind:"El Codex Atlanticus", body:"Reúne más de mil cien páginas de notas, inventos y bocetos. Anatomía, ingeniería, arte y filosofía conviviendo en la misma hoja, sin orden aparente."},
+      {kind:"El bestiario", body:"Escribió un bestiario personal donde cada animal encarnaba una virtud o un defecto: el zorro la astucia, el león la nobleza, el avestruz la paciencia."}
+    ]
+  }
+];
+
+let codexSection = 0, codexPage = 0;
+
+function renderCodexTabs(){
+  const wrap = document.getElementById("codexTabs");
+  wrap.innerHTML = "";
+  CODEX_SECTIONS.forEach((s, i)=>{
+    const tab = document.createElement("button");
+    tab.className = "codex-tab" + (i===codexSection?" active":"");
+    tab.textContent = s.tab;
+    tab.addEventListener("click", ()=>{
+      codexSection = i; codexPage = 0;
+      renderCodexTabs(); renderCodexPage(true);
+      playPaperClick(.1);
+    });
+    wrap.appendChild(tab);
+  });
+}
+
+function renderCodexPage(animate){
+  const section = CODEX_SECTIONS[codexSection];
+  const page = section.pages[codexPage];
+  const pageEl = document.getElementById("codexPage");
+  document.getElementById("codexPageKind").textContent = page.kind;
+  document.getElementById("codexPageBody").innerHTML = page.body;
+  document.getElementById("codexFolio").textContent = `${codexPage+1} / ${section.pages.length}`;
+  if(animate){
+    pageEl.classList.remove("turning"); void pageEl.offsetWidth; pageEl.classList.add("turning");
+  }
+}
+
+function turnCodexPage(dir){
+  const section = CODEX_SECTIONS[codexSection];
+  const next = codexPage + dir;
+  if(next < 0){
+    // retrocede a la sección anterior, última página
+    codexSection = (codexSection - 1 + CODEX_SECTIONS.length) % CODEX_SECTIONS.length;
+    codexPage = CODEX_SECTIONS[codexSection].pages.length - 1;
+    renderCodexTabs();
+  } else if(next >= section.pages.length){
+    // avanza a la siguiente sección, primera página
+    codexSection = (codexSection + 1) % CODEX_SECTIONS.length;
+    codexPage = 0;
+    renderCodexTabs();
+  } else {
+    codexPage = next;
+  }
+  renderCodexPage(true);
+  playPaperClick(.1);
+}
+
+document.getElementById("codexPrev").addEventListener("click", ()=> turnCodexPage(-1));
+document.getElementById("codexNext").addEventListener("click", ()=> turnCodexPage(1));
+
+function openKeyScreen(){
+  document.getElementById("keyOverlay").classList.add("show");
+  playBell(174, 3.2, [1,2,3,4], 0.05);
+}
+document.getElementById("keyEnterBtn").addEventListener("click", ()=>{
+  document.getElementById("keyOverlay").classList.remove("show");
+  openSecret();
+});
+
+function openSecret(){
+  renderCodexTabs();
+  renderCodexPage(false);
+  document.getElementById("secretOverlay").classList.add("show");
+  tone(300,500,.08);
+}
+document.getElementById("secretClose").addEventListener("click", ()=>{
+  document.getElementById("secretOverlay").classList.remove("show");
+  if(typeof dismissSplash==="function") dismissSplash();
+});
+document.getElementById("secretMirrorToggle").addEventListener("click", ()=>{
+  db.mirrorMode = !db.mirrorMode; save();
+  document.body.style.transform = db.mirrorMode ? "scaleX(-1)" : "none";
+  toast(db.mirrorMode ? "Modo espejo activado" : "Modo espejo desactivado");
+});
+
+/* ============ HELPERS ============ */
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+}
+// solo permite un color hex válido; cualquier otra cosa cae al color por defecto
+function safeHexColor(c){
+  return (typeof c === "string" && /^#[0-9a-fA-F]{6}$/.test(c)) ? c : "#c99a3f";
+}
+
+/* ============ PANTALLA PRINCIPAL (SPLASH) ============ */
+const splash = document.getElementById("splashScreen");
+function dismissSplash(){ splash.classList.add("hide"); }
+function openSplash(){ splash.classList.remove("hide"); }
+document.getElementById("splashEnterBtn").addEventListener("click", ()=>{ playCrystalChime(); dismissSplash(); });
+document.getElementById("returnSplashBtn").addEventListener("click", ()=>{ playCrystalChime(); openSplash(); });
+
+/* ============ INIT ============ */
+renderNotes(); renderIdeas(); renderPoemsList(); renderHome(); mainCal.refresh();
+if(db.mirrorMode) document.body.style.transform="scaleX(-1)";
+
+})();
+</script>
+</body>
+</html>

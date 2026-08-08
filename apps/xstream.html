@@ -1,0 +1,2575 @@
+<!DOCTYPE html>
+<html lang="es-MX" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-stream Pro</title>
+
+<!-- PeerJS: el puente real entre Emisor y Receptor — la MISMA nube y el
+     MISMO protocolo (v1.5.2) que usa la app nativa de Android, para que
+     esta página y el APK sean intercambiables entre sí. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js"></script>
+<script>
+  if (typeof Peer === 'undefined') {
+    document.write('<script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"><\/script>');
+  }
+</script>
+<style>
+  :root{
+    --bg:#F4F7F9;
+    --panel:rgba(255,255,255,.42);
+    --line-soft:#DCE4E9;
+    --accent:#0090C8;
+    --accent-soft:#B7E4F5;
+    --ink:#16232B;
+    --muted:#6E828C;
+    --amber:#D98A2B;
+    --amber-soft:#F0D3AC;
+    --green:#1FC97A;
+    --green-soft:#B9EBCF;
+    --neon-blue:#2D7DF6;
+    --neon-blue-soft:#BBD3FB;
+    --ok:#1FA97A;
+  }
+  html[data-theme="dark"]{
+    --bg:#0B0F13;
+    --panel:rgba(20,26,31,.4);
+    --line-soft:#26323A;
+    --accent:#39E0FF;
+    --accent-soft:rgba(57,224,255,.28);
+    --ink:#E8F2F5;
+    --muted:#8AA0A8;
+    --amber:#F2A93C;
+    --amber-soft:rgba(242,169,60,.35);
+    --green:#33FF9C;
+    --green-soft:rgba(51,255,156,.3);
+    --neon-blue:#4FA3FF;
+    --neon-blue-soft:rgba(79,163,255,.32);
+    --ok:#3FD79A;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; height:100%; background:var(--bg); color:var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    overflow:hidden; transition: background .3s ease, color .3s ease;
+  }
+  #hexCanvas{ position:fixed; inset:0; width:100%; height:100%; pointer-events:none; }
+
+  .theme-toggle{
+    position:fixed; top:16px; right:16px; z-index:8; display:flex; align-items:center; gap:6px;
+    background:var(--panel); border:1px solid var(--line-soft); border-radius:20px;
+    padding:6px 10px; cursor:pointer; font-size:11px; color:var(--muted); backdrop-filter:blur(8px);
+  }
+  .theme-toggle:hover{ color:var(--ink); border-color:var(--accent); }
+  .theme-toggle.active{ color:var(--accent); border-color:var(--accent); }
+
+  .tutorial-bubble{
+    position:fixed; max-width:165px; background:var(--panel); backdrop-filter:blur(10px);
+    border:1px solid var(--accent-soft); border-radius:8px; padding:9px 11px; font-size:10.5px;
+    line-height:1.45; color:var(--ink); z-index:20; opacity:0; transform:translateY(4px);
+    transition:opacity .25s ease, transform .25s ease; pointer-events:none; text-align:left;
+    box-shadow:0 0 14px var(--accent-soft);
+  }
+  .tutorial-bubble.show{ opacity:1; transform:translateY(0); }
+  .tutorial-bubble::after{
+    content:''; position:absolute; left:50%; transform:translateX(-50%);
+    border:6px solid transparent;
+  }
+  .tutorial-bubble.arrow-top::after{ top:-11px; border-bottom-color:var(--accent-soft); }
+  .tutorial-bubble.arrow-bottom::after{ bottom:-11px; border-top-color:var(--accent-soft); }
+  .tutorial-bubble{ pointer-events:auto; max-width:190px; }
+  .tb-title{ font-weight:700; color:var(--accent); font-size:11px; letter-spacing:.05em; margin-bottom:3px; text-transform:uppercase; }
+  .tb-text{ color:var(--ink); }
+  .tb-nav{ display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:6px; }
+  .tb-count{ font-size:9px; color:var(--muted); letter-spacing:.05em; }
+  .tb-btns button{
+    background:none; border:1px solid var(--accent-soft); color:var(--accent);
+    font-size:9.5px; padding:4px 8px; border-radius:12px; cursor:pointer;
+  }
+  .tb-btns button:hover{ border-color:var(--accent); }
+
+  .xbtn.tutorial-highlight .btn-face{
+    box-shadow: 0 0 0 2px var(--accent), 0 0 16px var(--accent-soft);
+  }
+
+  .app-footer{
+    position:fixed; bottom:8px; left:0; right:0; text-align:center;
+    font-size:13px; letter-spacing:.05em; color:var(--muted); z-index:7; opacity:0; pointer-events:none;
+    transition: opacity .3s ease;
+  }
+  .app-footer.visible{ opacity:.8; }
+  .app-footer .ft-accent{ color:var(--accent); font-weight:700; }
+
+  .screen{
+    position:fixed; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:22px; text-align:center; z-index:2;
+    opacity:0; transform:translateY(10px) scale(.982); pointer-events:none;
+    transition: opacity .56s cubic-bezier(.16,1,.3,1), transform .56s cubic-bezier(.16,1,.3,1);
+  }
+  .screen.active{ opacity:1; transform:translateY(0) scale(1); pointer-events:auto; z-index:3; }
+
+  .hud-panel{
+    position:relative; background:var(--panel); backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border:1px solid var(--line-soft); border-radius:6px;
+    box-shadow: 0 18px 40px rgba(20,50,60,.08);
+    padding:30px 26px; max-width:380px; width:100%;
+  }
+  .corner{ position:absolute; width:14px; height:14px; border-color:var(--accent); }
+  .corner.tl{ top:-1px; left:-1px; border-top:2px solid; border-left:2px solid; border-top-left-radius:6px; }
+  .corner.tr{ top:-1px; right:-1px; border-top:2px solid; border-right:2px solid; border-top-right-radius:6px; }
+  .corner.bl{ bottom:-1px; left:-1px; border-bottom:2px solid; border-left:2px solid; border-bottom-left-radius:6px; }
+  .corner.br{ bottom:-1px; right:-1px; border-bottom:2px solid; border-right:2px solid; border-bottom-right-radius:6px; }
+
+  .scanline{
+    position:absolute; left:0; right:0; height:1px; background:linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity:.5; animation: scan 3.2s linear infinite;
+  }
+  @keyframes scan{ 0%{ top:0%; opacity:0;} 10%{opacity:.6;} 90%{opacity:.6;} 100%{ top:100%; opacity:0;} }
+
+  .app-icon-frame{
+    position:relative; width:64px; height:64px; margin:0 auto 14px;
+    animation: bob 3.4s ease-in-out infinite;
+  }
+  @keyframes bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
+  .app-icon-frame .corner{ width:12px; height:12px; }
+  .app-icon-frame svg{ width:100%; height:100%; overflow:visible; }
+  .icon-dot{ animation: dotPulse 1.8s ease-in-out infinite; }
+  .icon-arc{ opacity:.15; animation: arcIgnite 1.8s ease-in-out infinite; }
+  .icon-arc.arc1{ animation-delay:0s; }
+  .icon-arc.arc2{ animation-delay:.22s; }
+  .icon-arc.arc3{ animation-delay:.44s; }
+  @keyframes arcIgnite{
+    0%, 66%, 100%{ opacity:.15; filter:none; }
+    22%{ opacity:1; filter: drop-shadow(0 0 3px currentColor) drop-shadow(0 0 7px currentColor); }
+  }
+  @keyframes dotPulse{
+    0%,100%{ filter: drop-shadow(0 0 2px currentColor); }
+    50%{ filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 10px currentColor); }
+  }
+
+  .wordmark{ display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:6px; }
+  .wm-x{ font-size:26px; font-weight:800; color:var(--accent); letter-spacing:-1px; }
+  .wm-stream{ font-size:26px; font-weight:300; color:var(--ink); letter-spacing:.5px; }
+  .wm-pro{
+    font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--bg); background:var(--ink);
+    padding:3px 9px; border-radius:20px; margin-left:2px; align-self:center;
+  }
+  .tagline{ font-size:10.5px; letter-spacing:.24em; color:var(--muted); margin:14px 0 22px; text-transform:uppercase; }
+  .quote{
+    font-size:13px; color:var(--muted); max-width:310px; line-height:1.6; margin:0 auto 24px;
+    border-left:2px solid var(--accent-soft); padding-left:14px; text-align:left;
+  }
+
+  .mode-row{ display:flex; gap:12px; justify-content:center; }
+
+  /* ---------- Botón burbuja + capa de cubos ---------- */
+  .xbtn{ position:relative; height:46px; border:none; background:none; padding:0; cursor:pointer; }
+  .xbtn.wide{ width:86%; max-width:300px; }
+  .xbtn.narrow{ width:150px; }
+  .xbtn.tiny{ width:78px; height:36px; }
+  .xbtn.tiny.wide-tiny{ width:118px; }
+  .xbtn.tiny.wide-tiny .btn-face{ font-size:8.5px; }
+
+  .btn-face{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    border-radius:999px; border:1px solid var(--accent-soft); background:rgba(0,144,200,.08);
+    color:var(--accent); font-size:11.5px; font-weight:600; letter-spacing:.13em;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path .32s ease;
+    pointer-events:none;
+  }
+  .xbtn.tiny .btn-face{ font-size:9.5px; letter-spacing:.04em; }
+  .xbtn.green .btn-face{ color:var(--green); border-color:var(--green-soft); background:rgba(31,201,122,.1); }
+  .xbtn.green.recording .btn-face{ color:var(--amber); border-color:var(--amber-soft); background:rgba(217,138,43,.1); }
+  .xbtn.blue .btn-face{ color:var(--neon-blue); border-color:var(--neon-blue-soft); background:var(--neon-blue-bg, rgba(45,125,246,.08)); }
+  .xbtn.face-visible .btn-face{ clip-path: inset(0 0 0 0); pointer-events:auto; }
+  .xbtn.active .btn-face{ color:#fff; background:var(--accent); border-color:var(--accent); }
+
+  .btn-cubes{
+    position:absolute; inset:0; pointer-events:none; color:var(--accent);
+    justify-content:center; align-content:center; overflow:visible;
+  }
+  .xbtn.green .btn-cubes{ color:var(--green); }
+  .xbtn.green.recording .btn-cubes{ color:var(--amber); }
+  .xbtn.blue .btn-cubes{ color:var(--neon-blue); }
+  .btn-cubes .cube{
+    opacity:0; transform:translate(var(--dx,0px), var(--dy,0px)) scale(.15) rotate(20deg);
+    transition:opacity .14s ease, transform .18s cubic-bezier(.2,.8,.3,1);
+  }
+  .xbtn.cubes-visible .btn-cubes .cube{ opacity:1; transform:translate(0,0) scale(1) rotate(0deg); }
+  .cube svg{ display:block; filter: drop-shadow(0 0 2.5px currentColor); transition: filter .25s ease; }
+  .btn-cubes.glow svg{ filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 8px currentColor) !important; }
+
+  .options-row{ display:flex; gap:10px; justify-content:center; margin-top:30px; }
+
+  .link-label{ font-size:10.5px; letter-spacing:.26em; color:var(--muted); margin-bottom:18px; text-transform:uppercase; }
+
+  .code-ring-wrap{ position:relative; width:150px; height:150px; margin:0 auto 18px; }
+  .code-ring-wrap svg.ring{ width:100%; height:100%; transform:rotate(-90deg); }
+  .ring-bg{ fill:none; stroke:var(--line-soft); stroke-width:3; }
+  .ring-fg{
+    fill:none; stroke:var(--accent); stroke-width:3; stroke-linecap:round;
+    stroke-dasharray:410; stroke-dashoffset:100; transition: stroke-dashoffset .8s ease, stroke .3s ease;
+  }
+  .ring-fg.connected{ stroke-dashoffset:0; stroke:var(--ok); }
+  .code-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .code-digits{ font-size:26px; font-weight:700; letter-spacing:.2em; color:var(--ink); }
+  .code-caption{ font-size:8.5px; letter-spacing:.2em; color:var(--muted); margin-top:4px; text-transform:uppercase; }
+
+  .status-text{ font-size:12.5px; color:var(--muted); margin-bottom:20px; }
+  .status-text.connected{ color:var(--ok); font-weight:600; }
+
+  .timer{ font-size:18px; color:var(--amber); margin-top:14px; letter-spacing:.08em; font-weight:600; }
+
+  .code-input{
+    width:100%; background:rgba(0,144,200,.05); border:1px solid var(--accent-soft);
+    border-radius:4px; padding:14px; font-size:22px; text-align:center; letter-spacing:.3em;
+    color:var(--ink); margin-bottom:16px; font-family:inherit;
+  }
+  .code-input:focus{ outline:none; border-color:var(--accent); }
+  .video-frame{
+    position:relative; width:100%; height:170px; border:1px solid var(--line-soft);
+    border-radius:4px; margin-top:18px; display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.03); color:var(--muted); font-size:12px; letter-spacing:.1em;
+    cursor:pointer; transition: box-shadow .3s ease, border-color .3s ease;
+    overflow: hidden; min-width:180px; min-height:110px; max-width:100%;
+  }
+  .video-frame.dragging{ transition:none; }
+  .video-frame.live{ border-color:var(--ok); color:var(--ok); font-weight:600; }
+  .video-frame .corner{ width:12px; height:12px; }
+
+  /* Una vez que lo mueves o lo amplías, se vuelve una ventana "flotante"
+     libre — se puede seguir moviendo y estirando/achicando sin límite,
+     incluso estando ampliado. Nada se bloquea. max-width:100% (arriba)
+     era del ancho del panel original; aquí ya no aplica, o el estirado
+     hacia los lados se vería recortado. */
+  .video-frame.floating{
+    position:fixed; z-index:60; margin:0; max-width:none; box-shadow:0 20px 50px rgba(0,0,0,.4);
+  }
+  .video-frame.expanded .prompter-text{ font-size:18px; line-height:1.9; }
+  .video-frame.expanded .expand-btn{ width:30px; height:30px; font-size:14px; }
+
+  .expand-btn{
+    position:absolute; top:6px; right:6px; z-index:5; width:26px; height:26px;
+    background:rgba(0,0,0,.35); border:1px solid var(--accent-soft); border-radius:6px;
+    color:var(--accent); font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .expand-btn:hover{ border-color:var(--accent); background:rgba(0,0,0,.5); }
+
+  .drag-handle-btn{
+    position:absolute; top:6px; left:6px; z-index:5; width:26px; height:26px;
+    background:rgba(0,0,0,.35); border:1px solid var(--accent-soft); border-radius:6px;
+    color:var(--accent); font-size:13px; cursor:grab; display:flex; align-items:center; justify-content:center;
+    touch-action:none;
+  }
+  .drag-handle-btn:hover{ border-color:var(--accent); background:rgba(0,0,0,.5); }
+  .drag-handle-btn:active{ cursor:grabbing; }
+
+  /* Controles que viven DENTRO del recuadro de video — así siguen
+     accesibles sin importar el tamaño o posición en la que lo dejes. */
+  .frame-pause-btn{
+    position:absolute; bottom:8px; right:44px; z-index:5; width:30px; height:30px;
+    background:rgba(0,0,0,.4); border:1px solid var(--accent-soft); border-radius:50%;
+    color:var(--accent); font-size:13px; cursor:pointer; display:none;
+    align-items:center; justify-content:center;
+  }
+  .frame-pause-btn.show{ display:flex; }
+
+  .prompter-colors{
+    position:absolute; bottom:8px; left:8px; z-index:5; display:flex; gap:5px;
+  }
+  .color-swatch{
+    width:16px; height:16px; border-radius:50%; cursor:pointer; border:2px solid rgba(255,255,255,.4);
+  }
+  .color-swatch.active{ border-color:var(--accent); box-shadow:0 0 6px var(--accent); }
+
+  /* Cuenta regresiva — anillo neón, mismo lenguaje visual que el círculo
+     del código (nada de fondos borrosos que no combinan con la app). */
+  .countdown-overlay{
+    position:fixed; inset:0; z-index:70; display:none; align-items:center; justify-content:center;
+    background:rgba(5,8,10,.7);
+  }
+  .countdown-overlay.show{ display:flex; }
+  .countdown-ring{
+    position:relative; width:150px; height:150px; border-radius:50%;
+    background:var(--panel); backdrop-filter:blur(10px);
+    border:2px solid var(--accent); box-shadow:0 0 30px var(--accent-soft), inset 0 0 20px var(--accent-soft);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .countdown-number{
+    font-size:62px; font-weight:800; color:var(--accent);
+    text-shadow:0 0 16px var(--accent-soft);
+    animation: countPulse .8s ease;
+  }
+  @keyframes countPulse{ 0%{ transform:scale(.4); opacity:0; } 40%{ transform:scale(1.15); opacity:1; } 100%{ transform:scale(1); opacity:1; } }
+
+  /* Confirmación de guardar/descartar al detener la grabación */
+  .save-confirm{ display:none; margin-top:22px; text-align:center; }
+  .save-confirm.show{ display:block; }
+  .save-confirm-text{ font-size:12.5px; color:var(--muted); margin-bottom:12px; }
+  .save-confirm-actions{ display:flex; gap:10px; justify-content:center; }
+
+  .remote-panel{
+    display:none; margin-top:20px; padding-top:18px; border-top:1px dashed var(--line-soft);
+  }
+  .remote-panel.show{ display:block; }
+
+  .prompter-overlay{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    pointer-events:none; overflow:hidden; border-radius:4px;
+  }
+  /* Los degradados existían SIEMPRE encima del video — en tema claro se
+     veían como márgenes desvanecidos que le bajaban calidad a la imagen.
+     Ahora solo aparecen cuando de verdad hay guion corriendo. */
+  .prompter-fade{ height:26px; flex-shrink:0; z-index:2; display:none; }
+  .prompter-overlay.con-guion .prompter-fade{ display:block; }
+  .prompter-fade.top{ background:linear-gradient(var(--bg), transparent); }
+  .prompter-fade.bottom{ background:linear-gradient(transparent, var(--bg)); margin-top:auto; }
+  .prompter-text-wrap{ flex:1; overflow:hidden; position:relative; }
+  .prompter-text{
+    position:absolute; left:0; right:0; top:100%; padding:0 14px;
+    color:var(--accent); font-size:13px; line-height:1.8; text-align:center;
+    white-space:pre-wrap; text-shadow:0 0 8px var(--accent-soft);
+  }
+
+  .prompter-status{ font-size:10px; color:var(--muted); margin-top:8px; }
+
+  .load-progress{
+    width:100%; height:4px; background:var(--line-soft); border-radius:3px;
+    overflow:hidden; margin-top:10px; display:none;
+  }
+  .load-progress.active{ display:block; }
+  .load-progress-bar{
+    height:100%; width:0%; background:var(--accent); border-radius:3px;
+    box-shadow:0 0 8px var(--accent); transition:width .2s ease;
+  }
+  .load-progress-bar.indeterminate{
+    width:40% !important; animation: loadSlide 1s ease-in-out infinite;
+  }
+  @keyframes loadSlide{
+    0%{ transform:translateX(-100%); } 100%{ transform:translateX(250%); }
+  }
+
+  .script-sources{ display:flex; flex-direction:column; gap:8px; margin-top:14px; }
+  .script-source-row{ display:flex; align-items:stretch; gap:8px; }
+  .xbtn.srcwide{ flex:1; height:42px; }
+  .play-btn{
+    width:36px; flex-shrink:0; background:rgba(0,144,200,.08); border:1px solid var(--accent-soft);
+    color:var(--accent); border-radius:8px; cursor:pointer; font-size:12px;
+  }
+  .play-btn:hover{ border-color:var(--accent); background:rgba(0,144,200,.16); }
+  .play-btn:active{ transform:scale(.95); }
+  .play-btn.loaded{ border-color:var(--green); color:var(--green); box-shadow:0 0 6px var(--green-soft); }
+  .play-btn.playing{ background:var(--green); color:#fff; border-color:var(--green); }
+
+  .speed-row{ display:flex; align-items:center; gap:10px; margin-top:16px; }
+  .speed-label{ font-size:10px; color:var(--muted); letter-spacing:.05em; white-space:nowrap; }
+  .speed-dots{ display:flex; gap:6px; flex:1; }
+  .speed-dot{
+    flex:1; height:8px; border-radius:2px; background:var(--line-soft);
+    border:1px solid var(--line-soft); cursor:pointer; transition: background .15s ease, border-color .15s ease;
+  }
+  .speed-dot.on{ background:var(--accent); border-color:var(--accent); box-shadow:0 0 6px var(--accent-soft); }
+
+  .full-editor{
+    width:100%; min-height:50vh; background:rgba(0,144,200,.05); border:1px solid var(--accent-soft);
+    border-radius:6px; padding:14px; color:var(--ink); font-family:inherit; font-size:13.5px;
+    resize:vertical; line-height:1.6; margin-top:16px;
+  }
+  .full-editor:focus{ outline:none; border-color:var(--accent); }
+  .script-editor-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+  .saved-preview{
+    max-height:40vh; overflow-y:auto; text-align:left; font-size:12.5px; line-height:1.6;
+    color:var(--ink); background:rgba(0,144,200,.04); border:1px solid var(--line-soft);
+    border-radius:6px; padding:12px; margin-top:14px; white-space:pre-wrap;
+  }
+  .saved-empty-text{ color:var(--muted); font-size:13px; margin:20px 0; }
+
+  .back-btn{
+    position:fixed; top:16px; left:16px; z-index:6; cursor:pointer;
+    background:var(--panel); border:1px solid var(--line-soft); color:var(--muted);
+    font-size:11.5px; letter-spacing:.08em; border-radius:14px; padding:7px 14px;
+    transition: border-color .2s ease, color .2s ease;
+  }
+  .back-btn:hover{ color:var(--ink); border-color:var(--accent); }
+
+  .mini-btn{
+    background:var(--panel); border:1px solid var(--line-soft); color:var(--muted);
+    font-size:9.5px; letter-spacing:.05em; padding:6px 11px; border-radius:14px; cursor:pointer;
+  }
+  .mini-btn:hover{ color:var(--ink); border-color:var(--accent); }
+
+  /* =========================================================
+     VIDEO REAL — la señal en vivo dentro de los marcos (preview
+     del emisor y visor del receptor). El video queda al fondo;
+     esquinas, teleprompter y botones siempre POR ENCIMA.
+     ========================================================= */
+  .video-frame video{
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:cover; border-radius:3px; background:#000;
+    display:none;
+  }
+  .video-frame.live video{ display:block; }
+  .video-frame .corner{ z-index:4; }
+  .prompter-overlay{ z-index:2; }
+  .video-frame.live #videoStatusText{
+    position:absolute; top:13px; left:40px; z-index:4;
+    font-size:10px; letter-spacing:.14em;
+  }
+  .emisor-preview{ margin-top:0; margin-bottom:20px; height:200px; cursor:default; resize:none; }
+  .emisor-preview.live #previewStatus{
+    position:absolute; top:8px; left:10px; z-index:4;
+    font-size:10px; letter-spacing:.14em; color:var(--ok); font-weight:600;
+  }
+
+  /* Si el contenido crece más que la pantalla (celulares chicos), se puede
+     bajar con scroll — el centrado con margin:auto se ve idéntico cuando
+     todo cabe, pero ya nada queda atrapado fuera de vista. */
+  .screen{ overflow-y:auto; justify-content:flex-start; }
+  .hud-panel{ margin-top:auto; margin-bottom:auto; }
+  @media (max-height:700px){ .emisor-preview{ height:150px; } }
+
+  /* Manija dedicada para ESTIRAR el visor — grande y al tacto, ya no hay
+     que cazar la esquinita invisible. */
+  .resize-handle-btn{
+    position:absolute; bottom:8px; right:8px; z-index:5; width:30px; height:30px;
+    background:rgba(0,0,0,.4); border:1px solid var(--accent-soft); border-radius:50%;
+    color:var(--accent); font-size:13px; cursor:nwse-resize; display:flex;
+    align-items:center; justify-content:center; touch-action:none; user-select:none;
+  }
+  .resize-handle-btn:hover{ border-color:var(--accent); background:rgba(0,0,0,.5); }
+
+  /* Botón GIRAR del visor: endereza la imagen cuando el celular graba en
+     horizontal — 90° por toque, junto al botón de ampliar. */
+  .rotate-btn{
+    position:absolute; top:6px; right:38px; z-index:5; width:26px; height:26px;
+    background:rgba(0,0,0,.35); border:1px solid var(--accent-soft); border-radius:6px;
+    color:var(--accent); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .rotate-btn:hover{ border-color:var(--accent); background:rgba(0,0,0,.5); }
+  .video-frame.expanded .rotate-btn{ width:30px; height:30px; right:44px; }
+
+  /* ---------- MODO OBS: fuente limpia a pantalla completa ---------- */
+  body.obs-mode{ background:#000; }
+  body.obs-mode #hexCanvas, body.obs-mode .theme-toggle, body.obs-mode .back-btn{ display:none !important; }
+  body.obs-mode #videoFrame{
+    position:fixed !important; inset:0 !important; width:100vw !important; height:100vh !important;
+    margin:0 !important; border:0 !important; border-radius:0 !important; max-width:none !important;
+    background:#000 !important; z-index:999; cursor:default;
+  }
+  body.obs-mode #videoFrame video{ border-radius:0; }
+  body.obs-mode #videoFrame .corner, body.obs-mode #videoFrame button,
+  body.obs-mode .prompter-colors, body.obs-mode .prompter-overlay{ display:none !important; }
+  body.obs-mode #videoStatusText{ z-index:5; }
+
+  /* Chip para copiar el enlace de OBS — aparece al conectar */
+  .obs-chip{
+    display:none; margin:12px auto 0; cursor:pointer;
+    background:var(--panel); border:1px solid var(--line-soft); color:var(--muted);
+    font-size:11px; letter-spacing:.08em; border-radius:14px; padding:7px 14px;
+    transition: border-color .2s ease, color .2s ease;
+  }
+  .obs-chip.show{ display:block; }
+  .obs-chip:hover{ color:var(--ink); border-color:var(--accent); }
+
+  /* ---------- Paleta única: tema + color de interfaz (patrón X-Flash) ---------- */
+  .palette-pop{
+    display:none; position:fixed; top:56px; right:16px; z-index:9;
+    background:var(--bg); border:1px solid var(--line-soft); border-radius:12px;
+    padding:12px 14px; box-shadow:0 14px 40px rgba(0,0,0,.35); min-width:190px;
+  }
+  .palette-pop.open{ display:block; }
+  .pal-title{ font-size:9px; letter-spacing:.2em; color:var(--muted); margin:2px 0 7px; }
+  .pal-row{ display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .pal-row:last-child{ margin-bottom:2px; }
+  .pal-mode{
+    flex:1; background:var(--panel); border:1px solid var(--line-soft); color:var(--muted);
+    border-radius:10px; padding:7px 10px; font-size:11px; cursor:pointer; white-space:nowrap;
+  }
+  .pal-mode.active{ color:var(--accent); border-color:var(--accent); }
+  .pal-swatch{
+    width:26px; height:26px; border-radius:50%; cursor:pointer;
+    border:2px solid var(--line-soft); padding:0;
+    transition: transform .15s ease, border-color .15s ease;
+  }
+  .pal-swatch:hover{ transform:scale(1.12); }
+  .pal-swatch.active{ border-color:var(--ink); transform:scale(1.12); }
+  body.obs-mode .palette-pop{ display:none !important; }
+</style>
+</head>
+<body>
+
+<canvas id="hexCanvas"></canvas>
+
+<button class="theme-toggle" id="helpToggle" style="top:60px;" onclick="toggleTutorial()">
+  <span>❔</span> <span id="helpLabel">Tutorial</span>
+</button>
+
+<button class="theme-toggle" id="themeToggle" onclick="togglePalette(event)">
+  <span>🎨</span> <span id="themeLabel">Claro</span>
+</button>
+
+<div class="palette-pop" id="palettePop">
+  <div class="pal-title">TEMA</div>
+  <div class="pal-row">
+    <button class="pal-mode active" id="palLight" onclick="setThemeMode('light')">☀ Claro</button>
+    <button class="pal-mode" id="palDark" onclick="setThemeMode('dark')">🌙 Oscuro</button>
+  </div>
+  <div class="pal-title">COLOR</div>
+  <div class="pal-row" id="palSwatches"></div>
+</div>
+
+<div class="app-footer">by <span class="ft-accent">X</span>anibal <span class="ft-accent">L</span>iar</div>
+
+<div class="screen active" id="screen-mode">
+  <div class="hud-panel">
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+    <span class="scanline"></span>
+
+    <div class="app-icon-frame">
+      <span class="corner tl"></span><span class="corner tr"></span>
+      <span class="corner bl"></span><span class="corner br"></span>
+      <svg viewBox="0 0 64 64" style="color:var(--accent);">
+        <!-- X compacta como base, con halo suave -->
+        <path d="M21,33 L43,55 M43,33 L21,55" stroke="currentColor" stroke-width="9" fill="none" stroke-linecap="round" opacity=".2"/>
+        <path d="M21,33 L43,55 M43,33 L21,55" stroke="currentColor" stroke-width="4.2" fill="none" stroke-linecap="round"/>
+        <!-- Ondas protagonistas: la primera nace EXACTO en las puntas de los
+             brazos y las demás se expanden siguiendo esa misma línea — se
+             leen como continuación de la X, no como algo encimado -->
+        <circle cx="32" cy="44" r="3" fill="currentColor" class="icon-dot"/>
+        <path d="M21.4,33.4 A15,15 0 0 1 42.6,33.4" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" class="icon-arc arc1"/>
+        <path d="M17.2,29.2 A21,21 0 0 1 46.8,29.2" stroke="currentColor" stroke-width="2.1" fill="none" stroke-linecap="round" class="icon-arc arc2"/>
+        <path d="M12.9,24.9 A27,27 0 0 1 51.1,24.9" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" class="icon-arc arc3"/>
+      </svg>
+    </div>
+
+    <div class="wordmark">
+      <span class="wm-x">X</span><span class="wm-stream">-stream</span><span class="wm-pro">PRO</span>
+    </div>
+    <div class="tagline">Transmisión de pantalla en vivo</div>
+    <div class="quote">"Tu mirada es un puente; es la honestidad de tu presencia llegando al otro lado."</div>
+
+    <div class="mode-row">
+      <button class="xbtn narrow" id="btnEmisor" onclick="goTo('mode','emisor','btnEmisor',['btnReceptor'])">
+        <div class="btn-cubes" id="gridEmisor"></div>
+        <div class="btn-face">EMISOR</div>
+      </button>
+      <button class="xbtn narrow" id="btnReceptor" onclick="goTo('mode','receptor','btnReceptor',['btnEmisor'])">
+        <div class="btn-cubes" id="gridReceptor"></div>
+        <div class="btn-face">RECEPTOR</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-emisor">
+  <button class="back-btn" onclick="goTo('emisor','mode','recordBtn',['opt1','opt2','opt4','opt5'], true)">‹ VOLVER</button>
+
+  <div class="hud-panel">
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+    <span class="scanline"></span>
+
+    <div class="link-label">Modo emisor</div>
+
+    <div class="code-ring-wrap">
+      <svg class="ring" viewBox="0 0 150 150">
+        <circle class="ring-bg" cx="75" cy="75" r="66"></circle>
+        <circle class="ring-fg" id="ringFg" cx="75" cy="75" r="66"></circle>
+      </svg>
+      <div class="code-center">
+        <div class="code-digits" id="codeDigits">····</div>
+        <div class="code-caption">código</div>
+      </div>
+    </div>
+
+    <div class="status-text" id="statusText">Esperando receptor…</div>
+
+    <div class="video-frame emisor-preview" id="previewFrame">
+      <span class="corner tl"></span><span class="corner tr"></span>
+      <span class="corner bl"></span><span class="corner br"></span>
+      <button class="drag-handle-btn" id="dragHandleE" title="Mover">✥</button>
+      <button class="expand-btn" onclick="toggleVideoExpand(event, document.getElementById('previewFrame'))" title="Ampliar">⛶</button>
+      <button class="resize-handle-btn" id="resizeHandleE" title="Estirar">⇲</button>
+      <video id="localVideo" autoplay playsinline muted></video>
+      <span id="previewStatus">Cámara apagada</span>
+    </div>
+
+    <button class="xbtn wide green" id="recordBtn" onclick="toggleRecord()">
+      <div class="btn-cubes" id="grid2"></div>
+      <div class="btn-face" id="recordLabel">INICIAR CAPTURA</div>
+    </button>
+
+    <div class="timer" id="timer" style="display:none;">00:00</div>
+
+    <div class="options-row">
+      <button class="xbtn tiny blue" id="opt1" onclick="toggleOption(this)">
+        <div class="btn-cubes" id="optGrid1"></div>
+        <div class="btn-face">Espejo</div>
+      </button>
+      <button class="xbtn tiny blue" id="opt2" onclick="toggleOption(this)">
+        <div class="btn-cubes" id="optGrid2"></div>
+        <div class="btn-face">Cámara</div>
+      </button>
+      <button class="xbtn tiny wide-tiny blue" id="opt4" onclick="toggleOption(this)">
+        <div class="btn-cubes" id="optGrid4"></div>
+        <div class="btn-face">Cuenta regresiva</div>
+      </button>
+      <button class="xbtn tiny blue active" id="opt5" onclick="toggleOption(this)">
+        <div class="btn-cubes" id="optGrid5"></div>
+        <div class="btn-face">Micrófono</div>
+      </button>
+    </div>
+
+    <div class="save-confirm" id="saveConfirm">
+      <div class="save-confirm-text">¿Guardar esta grabación?</div>
+      <div class="save-confirm-actions">
+        <button class="xbtn tiny blue" id="btnDiscard" onclick="resolveRecording(false)">
+          <div class="btn-cubes" id="gridDiscard"></div>
+          <div class="btn-face">DESCARTAR</div>
+        </button>
+        <button class="xbtn tiny green" id="btnSaveRec" onclick="resolveRecording(true)">
+          <div class="btn-cubes" id="gridSaveRec"></div>
+          <div class="btn-face">GUARDAR</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="countdown-overlay" id="countdownOverlay">
+    <div class="countdown-ring">
+      <div class="countdown-number" id="countdownNumber">3</div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-receptor">
+  <button class="back-btn" onclick="goTo('receptor','mode','connectBtn',['btnLoadPdf','btnWriteScript','btnLoadSaved'], true)">‹ VOLVER</button>
+
+  <div class="hud-panel">
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+    <span class="scanline"></span>
+
+    <div class="link-label">Modo receptor</div>
+
+    <input class="code-input" id="codeInput" maxlength="4" placeholder="0000" inputmode="numeric">
+
+    <button class="xbtn wide" id="connectBtn" onclick="connectReceptor()">
+      <div class="btn-cubes" id="gridConnect"></div>
+      <div class="btn-face">CONECTAR</div>
+    </button>
+
+    <div class="video-frame" id="videoFrame">
+      <span class="corner tl"></span><span class="corner tr"></span>
+      <span class="corner bl"></span><span class="corner br"></span>
+      <video id="remoteVideo" autoplay playsinline muted></video>
+      <button class="drag-handle-btn" id="dragHandle" title="Mover">✥</button>
+      <button class="resize-handle-btn" id="resizeHandle" title="Estirar">⇲</button>
+      <button class="expand-btn" onclick="toggleVideoExpand(event, document.getElementById('videoFrame'))" title="Ampliar">⛶</button>
+      <button class="rotate-btn" onclick="rotateRemoteView(event)" title="Girar imagen">⟳</button>
+      <div class="prompter-overlay" id="prompterOverlay">
+        <div class="prompter-fade top"></div>
+        <div class="prompter-text-wrap">
+          <div class="prompter-text" id="prompterText"></div>
+        </div>
+        <div class="prompter-fade bottom"></div>
+      </div>
+      <span id="videoStatusText">Sin señal</span>
+      <button class="frame-pause-btn" id="promptToggleBtn" onclick="togglePrompterScroll(event)">⏸</button>
+      <div class="prompter-colors">
+        <div class="color-swatch active" style="background:#2BD8F5;" onclick="setPrompterColor(event,'#2BD8F5')" title="Neón (por defecto)"></div>
+        <div class="color-swatch" style="background:#FFFFFF;" onclick="setPrompterColor(event,'#FFFFFF')" title="Blanco — para fondos oscuros"></div>
+        <div class="color-swatch" style="background:#000000;" onclick="setPrompterColor(event,'#000000')" title="Negro — para fondos claros"></div>
+      </div>
+    </div>
+
+    <button class="obs-chip" id="obsLinkBtn" onclick="copyObsLink(event)">⧉ ENLACE PARA OBS STUDIO</button>
+
+    <div class="remote-panel" id="remotePanel">
+      <div class="link-label">Control remoto del emisor</div>
+
+      <button class="xbtn wide green" id="recordBtnR" onclick="toggleRecord()">
+        <div class="btn-cubes" id="gridR"></div>
+        <div class="btn-face" id="recordLabelR">INICIAR CAPTURA</div>
+      </button>
+
+      <div class="timer" id="timerR" style="display:none;">00:00</div>
+
+      <div class="options-row">
+        <button class="xbtn tiny blue" id="opt1R" onclick="toggleOption(this)">
+          <div class="btn-cubes" id="optGrid1R"></div>
+          <div class="btn-face">Espejo</div>
+        </button>
+        <button class="xbtn tiny blue" id="opt2R" onclick="toggleOption(this)">
+          <div class="btn-cubes" id="optGrid2R"></div>
+          <div class="btn-face">Cámara</div>
+        </button>
+        <button class="xbtn tiny wide-tiny blue" id="opt4R" onclick="toggleOption(this)">
+          <div class="btn-cubes" id="optGrid4R"></div>
+          <div class="btn-face">Cuenta regresiva</div>
+        </button>
+        <button class="xbtn tiny blue active" id="opt5R" onclick="toggleOption(this)">
+          <div class="btn-cubes" id="optGrid5R"></div>
+          <div class="btn-face">Micrófono</div>
+        </button>
+      </div>
+
+      <div class="save-confirm" id="saveConfirmR">
+        <div class="save-confirm-text">¿Guardar esta grabación?</div>
+        <div class="save-confirm-actions">
+          <button class="xbtn tiny blue" id="btnDiscardR" onclick="resolveRecording(false)">
+            <div class="btn-cubes" id="gridDiscardR"></div>
+            <div class="btn-face">DESCARTAR</div>
+          </button>
+          <button class="xbtn tiny green" id="btnSaveRecR" onclick="resolveRecording(true)">
+            <div class="btn-cubes" id="gridSaveRecR"></div>
+            <div class="btn-face">GUARDAR</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="load-progress" id="loadProgress">
+      <div class="load-progress-bar" id="loadProgressBar"></div>
+    </div>
+
+    <input type="file" id="scriptFile" accept=".txt,.pdf,.docx" style="display:none" onchange="handleScriptFile(event)">
+
+    <div class="script-sources">
+      <div class="script-source-row">
+        <button class="xbtn blue srcwide" id="btnLoadPdf" onclick="document.getElementById('scriptFile').click()">
+          <div class="btn-cubes" id="gridLoadPdf"></div>
+          <div class="btn-face">CARGAR PDF/WORD</div>
+        </button>
+        <button class="play-btn" id="playBtnFile" onclick="playSlot('file')" title="Reproducir este guion">▶</button>
+      </div>
+      <div class="script-source-row">
+        <button class="xbtn blue srcwide" id="btnWriteScript" onclick="openScriptEditor()">
+          <div class="btn-cubes" id="gridWriteScript"></div>
+          <div class="btn-face">ESCRIBIR GUION</div>
+        </button>
+        <button class="play-btn" id="playBtnEditor" onclick="playSlot('editor')" title="Reproducir este guion">▶</button>
+      </div>
+      <div class="script-source-row">
+        <button class="xbtn blue srcwide" id="btnLoadSaved" onclick="openSavedScreen()">
+          <div class="btn-cubes" id="gridLoadSaved"></div>
+          <div class="btn-face">CARGAR GUARDADO</div>
+        </button>
+        <button class="play-btn" id="playBtnSaved" onclick="playSlot('saved')" title="Reproducir este guion">▶</button>
+      </div>
+    </div>
+
+    <div class="speed-row">
+      <span class="speed-label">Velocidad</span>
+      <div class="speed-dots" id="speedDots"></div>
+    </div>
+
+    <div class="prompter-status" id="scriptStatus">Sin guion cargado todavía.</div>
+  </div>
+</div>
+
+<div class="screen" id="screen-script-editor">
+  <button class="back-btn" onclick="returnToReceptor('script-editor')">‹ VOLVER</button>
+  <div class="hud-panel">
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+    <span class="scanline"></span>
+    <div class="link-label">Escribir guion</div>
+    <textarea id="scriptTextarea" class="full-editor" oninput="scriptSlots.editor = this.value; markSlotLoaded('editor')" placeholder="Escribe aquí tu guion..."></textarea>
+    <div class="script-editor-actions">
+      <button class="mini-btn" onclick="playButtonSound(); returnToReceptor('script-editor')">Cancelar</button>
+      <button class="mini-btn" onclick="saveScript()">Guardar guion</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-script-saved">
+  <button class="back-btn" onclick="returnToReceptor('script-saved')">‹ VOLVER</button>
+  <div class="hud-panel">
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+    <span class="scanline"></span>
+    <div class="link-label">Guion guardado</div>
+    <div id="savedEmptyState" style="display:none;">
+      <p class="saved-empty-text">No tienes ningún guion guardado todavía.</p>
+      <button class="mini-btn" onclick="playButtonSound(); returnToReceptor('script-saved'); setTimeout(openScriptEditor, 650);">✎ Escribir uno ahora</button>
+    </div>
+    <div id="savedFilledState" style="display:none;">
+      <div class="saved-preview" id="savedPreview"></div>
+      <div class="script-editor-actions">
+        <button class="mini-btn" onclick="playButtonSound(); localStorage.removeItem('xstream_script'); scriptSlots.saved=''; openSavedScreen();">Borrar</button>
+        <button class="mini-btn" onclick="playSlot('saved'); returnToReceptor('script-saved');">▶ Reproducir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  /* =========================================================
+     AUDIO — el "X-tone" (440Hz+660Hz, seno) para confirmaciones
+     generales, igual que en tus otras apps de la familia X-, y
+     un sonido NUEVO tipo "blip" digital para la construcción y
+     disolución de los cubos, sincronizado con el mismo desfase
+     visual de cada columna/fila.
+     ========================================================= */
+  let audioCtx = null;
+  function getAudioCtx(){
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  /* Bus compartido de "espacio" (delay + realimentación filtrada) — le da
+     a cada sonido una cola suave de eco, como el sonido de arranque de una
+     consola moderna, en vez de un beep seco. */
+  let spaceBus = null;
+  function getSpaceBus(ctx){
+    if(spaceBus) return spaceBus;
+    const delay = ctx.createDelay(1.2);
+    delay.delayTime.value = 0.26;
+    const feedback = ctx.createGain();
+    feedback.gain.value = 0.32;
+    const wetFilter = ctx.createBiquadFilter();
+    wetFilter.type = 'lowpass';
+    wetFilter.frequency.value = 1400;
+    const wetGain = ctx.createGain();
+    wetGain.gain.value = 0.22;
+    delay.connect(feedback); feedback.connect(wetFilter); wetFilter.connect(delay);
+    delay.connect(wetGain); wetGain.connect(ctx.destination);
+    spaceBus = delay;
+    return spaceBus;
+  }
+
+  function playCubeBlip(delaySec, progress){
+    if(document.body.classList.contains('obs-mode')) return; // ni un bip al aire
+    const ctx = getAudioCtx();
+    const baseFreq = 300 + progress * 420;
+    const start = ctx.currentTime + Math.max(0, delaySec);
+    const dryFilter = ctx.createBiquadFilter();
+    dryFilter.type = 'lowpass';
+    dryFilter.frequency.value = 2400;
+    dryFilter.connect(ctx.destination);
+    const bus = getSpaceBus(ctx);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(0.045, start + 0.05); // ataque suave, no percusivo
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.42); // sonido largo, no un "blip"
+    gain.connect(dryFilter);
+    gain.connect(bus);
+
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(baseFreq, start);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.15, start + 0.35);
+    osc.connect(gain);
+    osc.start(start);
+    osc.stop(start + 0.46);
+  }
+
+  /* Generador configurable — para el panel temporal de pruebas de sonido */
+  function playCustomTone(freqs, opts){
+    if(document.body.classList.contains('obs-mode')) return; // ni un tono al aire
+    const o = Object.assign({
+      wave:'sine', attack:0.25, hold:0.05, release:1.0,
+      filterFreq:2200, delayTime:0.26, feedback:0.3, wetGain:0.22,
+      shimmer:false, glide:0, gainMul:1, startOffset:0
+    }, opts || {});
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime + Math.max(0, o.startOffset);
+
+    const dryFilter = ctx.createBiquadFilter();
+    dryFilter.type = 'lowpass'; dryFilter.frequency.value = o.filterFreq;
+    dryFilter.connect(ctx.destination);
+
+    const delay = ctx.createDelay(2.0); delay.delayTime.value = o.delayTime;
+    const fb = ctx.createGain(); fb.gain.value = o.feedback;
+    const wetFilter = ctx.createBiquadFilter(); wetFilter.type='lowpass'; wetFilter.frequency.value = o.filterFreq*0.7;
+    const wet = ctx.createGain(); wet.gain.value = o.wetGain;
+    delay.connect(fb); fb.connect(wetFilter); wetFilter.connect(delay);
+    delay.connect(wet); wet.connect(ctx.destination);
+
+    freqs.forEach((freq, i) => {
+      const stagger = i*0.03;
+      const peak = (0.1/Math.sqrt(freqs.length)) * o.gainMul;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = o.wave;
+      osc.frequency.setValueAtTime(freq, now);
+      if(o.glide) osc.frequency.exponentialRampToValueAtTime(freq*(1+o.glide), now+o.attack+o.hold);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(peak, now + o.attack + stagger);
+      gain.gain.setValueAtTime(peak, now + o.attack + o.hold + stagger);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + o.attack + o.hold + o.release + stagger);
+      osc.connect(gain); gain.connect(dryFilter); gain.connect(delay);
+      osc.start(now); osc.stop(now + o.attack + o.hold + o.release + 0.3 + stagger);
+
+      if(o.shimmer){
+        const osc2 = ctx.createOscillator(); const gain2 = ctx.createGain();
+        osc2.type = 'sine'; osc2.frequency.value = freq*2.01;
+        gain2.gain.setValueAtTime(0.0001, now);
+        gain2.gain.exponentialRampToValueAtTime(peak*0.35, now + o.attack*0.6);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, now + o.attack + o.hold + o.release*0.6);
+        osc2.connect(gain2); gain2.connect(dryFilter); gain2.connect(delay);
+        osc2.start(now); osc2.stop(now + o.attack + o.hold + o.release + 0.3);
+      }
+    });
+  }
+
+  /* ---------- Sonidos definitivos (de las 15 variantes probadas, solo se quedan estos 4) ---------- */
+  function playStartupSound(){       // Pad ambiental — bienvenida al abrir la app
+    playCustomTone([293,440], { attack:.6, hold:.2, release:1.8, filterFreq:1600 });
+  }
+  function playScreenChangeSound(){  // Quinta justa suave — cambio de pantalla, debe resaltar sobre los cubos
+    playCustomTone([392,587], { attack:.22, release:1.1, gainMul:2.4 });
+  }
+  function playButtonSound(){        // Metálico — botones en general, con más volumen
+    playCustomTone([440,445], { attack:.15, release:1.3, filterFreq:2600, gainMul:1.8 });
+  }
+  function playStartRecordSound(){   // Brillante/cristalino — al empezar a grabar
+    playCustomTone([523,784], { attack:.15, release:1.1, filterFreq:3200, shimmer:true });
+  }
+
+  // Sonido de los cubos — el 9 real (Destello digital: freqs 440/554/659,
+  // ataque .08, hold .02, release .6, filtro 3000), con el volumen bajo
+  // para que NO compita con el de cambio de pantalla, y sincronizado nota
+  // por nota con el mismo desfase que ya mueve cada cubo.
+  const CUBE_9_FREQS = [440, 554, 659];
+  function playCubeSound(delaySec, progress){
+    const freq = CUBE_9_FREQS[Math.min(CUBE_9_FREQS.length - 1, Math.floor(progress * CUBE_9_FREQS.length))];
+    playCustomTone([freq], {
+      attack:.08, hold:.02, release:.6, filterFreq:3000,
+      gainMul:.22, startOffset: delaySec
+    });
+  }
+
+  // Sonido de error / desconexión — el 15 (Barrido cósmico)
+  function playErrorSound(){
+    playCustomTone([220,440], { attack:.1, hold:.02, release:1.5, filterFreq:2400, glide:1.6 });
+  }
+
+  // Sonido al conectarnos con éxito — el 1 (referencia original)
+  function playConnectedSound(){
+    playCustomTone([440,660], { });
+  }
+
+  // Sonido al abrir/cerrar Tutorial o cambiar de Tema — el 6 (Campana suave)
+  function playToggleSound(){
+    playCustomTone([523], { attack:.05, hold:.02, release:1.6, filterFreq:2800, shimmer:true });
+  }
+
+  // Sonido al navegar "Antes / Siguiente" dentro del tutorial — el 3
+  // (Cálido/profundo), con más volumen para que se note el paso de página.
+  function playTutorialNavSound(){
+    playCustomTone([220,330], { attack:.3, release:1.3, filterFreq:1200, gainMul:1.8 });
+  }
+
+  const canvas = document.getElementById('hexCanvas');
+  const ctx = canvas.getContext('2d');
+  function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resize);
+  resize();
+
+  let accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+
+  const HEX_COUNT = 16;
+  const hexParticles = [];
+  for(let i=0;i<HEX_COUNT;i++){
+    hexParticles.push({
+      x: Math.random()*window.innerWidth, y: Math.random()*window.innerHeight,
+      r: 14 + Math.random()*20, vx:(Math.random()-0.5)*0.18, vy:(Math.random()-0.5)*0.18,
+      rot: Math.random()*Math.PI*2, vrot:(Math.random()-0.5)*0.003,
+      baseAlpha: 0.18 + Math.random()*0.22, flicker: Math.random()*Math.PI*2, flickerSpeed: 0.02+Math.random()*0.05,
+      boost: 0
+    });
+  }
+
+  function hexToRgb(hex){
+    hex = hex.replace('#','');
+    if(hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+    return [parseInt(hex.slice(0,2),16), parseInt(hex.slice(2,4),16), parseInt(hex.slice(4,6),16)];
+  }
+
+  function drawHexOutline(p, alpha, rgb){
+    ctx.save();
+    ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+    ctx.shadowColor = `rgb(${rgb.join(',')})`; ctx.shadowBlur = 8;
+    ctx.strokeStyle = `rgba(${rgb.join(',')},${alpha})`; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for(let i=0;i<6;i++){
+      const angle = Math.PI/180*(60*i);
+      const x = p.r*Math.cos(angle), y = p.r*Math.sin(angle);
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.closePath(); ctx.stroke(); ctx.restore();
+  }
+
+  function loopHex(){
+    ctx.clearRect(0,0,canvas.width, canvas.height);
+    const rgb = hexToRgb(accentColor);
+    hexParticles.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.rot += p.vrot; p.flicker += p.flickerSpeed;
+      if(p.x < -40) p.x = canvas.width+40; if(p.x > canvas.width+40) p.x = -40;
+      if(p.y < -40) p.y = canvas.height+40; if(p.y > canvas.height+40) p.y = -40;
+      let flick = (Math.sin(p.flicker)*0.5+0.5);
+      if(Math.random() < 0.004) flick = 0.05;
+      p.boost *= 0.90;
+      const alpha = Math.min(1, p.baseAlpha*(0.4+flick*0.6) + p.boost*0.75);
+      drawHexOutline(p, alpha, rgb);
+    });
+    requestAnimationFrame(loopHex);
+  }
+  loopHex();
+
+  /* Reacción en cadena: recorre los hexágonos de izquierda a derecha y les
+     da un pulso de brillo con un pequeño desfase entre uno y otro. */
+  function chainFlashHexagons(){
+    const sorted = [...hexParticles].sort((a,b) => a.x - b.x);
+    const span = 520;
+    sorted.forEach((p, i) => {
+      setTimeout(() => { p.boost = 1; }, Math.round((i/sorted.length) * span));
+    });
+  }
+
+  /* ---------- Paleta única: tema + color de la interfaz ----------
+     Un solo panel con Claro/Oscuro Y el color de acento — el mismo
+     patrón de X-Flash. Cada acento trae su versión para tema claro
+     (más profunda, con contraste) y para tema oscuro (más neón). */
+  const ACCENTS = [
+    { key:'cian',    nombre:'Cian',       claro:'#0090C8', oscuro:'#39E0FF' },
+    { key:'rosa',    nombre:'Rosa claro', claro:'#D6538A', oscuro:'#FF9EC4' },
+    { key:'verde',   nombre:'Verde',      claro:'#1FA97A', oscuro:'#33FF9C' },
+    { key:'ambar',   nombre:'Ámbar',      claro:'#C97F1F', oscuro:'#F2A93C' },
+    { key:'azul',    nombre:'Azul',       claro:'#2D6FD6', oscuro:'#4FA3FF' },
+    { key:'violeta', nombre:'Violeta',    claro:'#7A4FD6', oscuro:'#B48CFF' },
+  ];
+  let accentKey = 'cian';
+  try{ accentKey = localStorage.getItem('xstream_accent') || 'cian'; }catch(e){}
+
+  function aplicarAcento(){
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const opt = ACCENTS.find(a => a.key === accentKey) || ACCENTS[0];
+    const hex = isDark ? opt.oscuro : opt.claro;
+    document.documentElement.style.setProperty('--accent', hex);
+    document.documentElement.style.setProperty('--accent-soft', hex + (isDark ? '47' : '55'));
+    // Los botones "azules" (opciones y guiones) beben de una variable
+    // hermana — sin estas líneas se quedaban azules al elegir otro color
+    // y desentonaban con el resto de la interfaz.
+    document.documentElement.style.setProperty('--neon-blue', hex);
+    document.documentElement.style.setProperty('--neon-blue-soft', hex + (isDark ? '52' : '55'));
+    document.documentElement.style.setProperty('--neon-blue-bg', hex + '14');
+    accentColor = hex; // los cubos y el fondo de hexágonos beben de aquí
+    document.querySelectorAll('.pal-swatch').forEach(sw => sw.classList.toggle('active', sw.dataset.key === accentKey));
+  }
+
+  function setThemeMode(mode){
+    playToggleSound();
+    document.documentElement.setAttribute('data-theme', mode);
+    document.getElementById('themeLabel').textContent = mode === 'dark' ? 'Oscuro' : 'Claro';
+    document.getElementById('palLight').classList.toggle('active', mode === 'light');
+    document.getElementById('palDark').classList.toggle('active', mode === 'dark');
+    try{ localStorage.setItem('xstream_theme', mode); }catch(e){}
+    aplicarAcento();
+  }
+
+  function pickAccent(key){
+    playButtonSound();
+    accentKey = key;
+    try{ localStorage.setItem('xstream_accent', key); }catch(e){}
+    aplicarAcento();
+  }
+
+  function togglePalette(e){
+    e.stopPropagation();
+    playToggleSound();
+    document.getElementById('palettePop').classList.toggle('open');
+  }
+  document.addEventListener('click', e => {
+    const pop = document.getElementById('palettePop');
+    if(pop.classList.contains('open') && !pop.contains(e.target) && e.target.id !== 'themeToggle') pop.classList.remove('open');
+  });
+
+  // Construir las muestras y restaurar lo guardado
+  (function initPaleta(){
+    const cont = document.getElementById('palSwatches');
+    ACCENTS.forEach(a => {
+      const b = document.createElement('button');
+      b.className = 'pal-swatch';
+      b.dataset.key = a.key;
+      b.title = a.nombre;
+      b.style.background = a.oscuro;
+      b.onclick = () => pickAccent(a.key);
+      cont.appendChild(b);
+    });
+    let tema = 'light';
+    try{ tema = localStorage.getItem('xstream_theme') || 'light'; }catch(e){}
+    document.documentElement.setAttribute('data-theme', tema);
+    document.getElementById('themeLabel').textContent = tema === 'dark' ? 'Oscuro' : 'Claro';
+    document.getElementById('palLight').classList.toggle('active', tema === 'light');
+    document.getElementById('palDark').classList.toggle('active', tema === 'dark');
+    aplicarAcento();
+  })();
+
+  /* ---------- Cubo individual (hexágono + "Y" = isométrico), neón vía currentColor ---------- */
+  function cubeSVG(size){
+    return `<svg width="${size}" height="${size}" viewBox="0 0 20 20" style="overflow:visible;">
+      <g stroke="currentColor" stroke-width="1.3" fill="none">
+        <polygon points="10,1 18,5.5 18,14.5 10,19 2,14.5 2,5.5"/>
+        <line x1="10" y1="10" x2="10" y2="1"/>
+        <line x1="10" y1="10" x2="18" y2="14.5"/>
+        <line x1="10" y1="10" x2="2" y2="14.5"/>
+      </g>
+    </svg>`;
+  }
+
+  const SPREAD_MS = 130; // barrido de construcción de cubos base
+  const TRANS_MS = 130;  // duración base de la transición de cada cubo
+
+  function disperseWait(id){
+    const cfg = BTN_MAP[id] || {};
+    const speed = cfg.speedOut ?? cfg.speed ?? 1;
+    return Math.round(SPREAD_MS*speed) + Math.round(TRANS_MS*speed) + 140;
+  }
+  function materializeWait(id){
+    const cfg = BTN_MAP[id] || {};
+    const speed = cfg.speedIn ?? cfg.speed ?? 1;
+    return Math.round(SPREAD_MS*speed) + Math.round(TRANS_MS*speed) + 60;
+  }
+
+  /* Siempre 2 filas de cubos GRANDES — el tamaño del cubo se calcula según
+     la altura real de cada botón (no un tamaño fijo), así se ve limpio
+     tanto en compu como en celular. */
+  function buildCubeGrid(gridId, btnId, spreadMs, transMs, direction, reverse){
+    const container = document.getElementById(gridId);
+    const btn = document.getElementById(btnId);
+    const rect = btn.getBoundingClientRect();
+    const gap = 3;
+    const rows = 2;
+    const cubeSize = Math.max(7, Math.floor((rect.height - gap*(rows-1)) / rows));
+    const cols = Math.max(3, Math.floor(rect.width / (cubeSize + gap)));
+    const total = cols * rows;
+
+    container.style.display = 'grid';
+    container.style.gridTemplateColumns = `repeat(${cols}, ${cubeSize}px)`;
+    container.style.gridTemplateRows = `repeat(${rows}, ${cubeSize}px)`;
+    container.innerHTML = '';
+
+    for(let i=0;i<total;i++){
+      const wrap = document.createElement('div');
+      wrap.className = 'cube';
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const effCol = reverse ? (cols - 1 - col) : col;
+      const effRow = reverse ? (rows - 1 - row) : row;
+      const progress = direction === 'vertical' ? effRow / rows : effCol / cols;
+      const delay = Math.round(progress * spreadMs);
+      wrap.style.transition = `opacity ${transMs}ms ease ${delay}ms, transform ${transMs+40}ms cubic-bezier(.2,.8,.3,1) ${delay}ms`;
+      const isFirstOfStep = direction === 'vertical' ? (col === 0) : (row === 0);
+      if(isFirstOfStep) playCubeSound(delay/1000, progress); // un sonido por paso, sincronizado con el movimiento
+      const dx = (Math.random() > 0.5 ? 1 : -1) * Math.min(cubeSize*0.6 + Math.random()*cubeSize*0.6, 26);
+      const dy = (Math.random() - 0.5) * Math.min(cubeSize*0.9, 20);
+      wrap.style.setProperty('--dx', dx.toFixed(1) + 'px');
+      wrap.style.setProperty('--dy', dy.toFixed(1) + 'px');
+      wrap.innerHTML = cubeSVG(cubeSize);
+      container.appendChild(wrap);
+    }
+    return total;
+  }
+
+  const BTN_MAP = {
+    btnEmisor:   { grid:'gridEmisor',   speed:1 },
+    btnReceptor: { grid:'gridReceptor', speed:1 },
+    recordBtn:   { grid:'grid2',        speedIn:1.2, speedOut:0.8, direction:'vertical' }, // entra más pausado, sale como ya estaba (perfecto)
+    opt1:        { grid:'optGrid1',     speed:1.3 },  // un poco más lentos que antes
+    opt2:        { grid:'optGrid2',     speed:1.3 },
+    opt4:        { grid:'optGrid4',     speed:1.3 },
+    opt5:        { grid:'optGrid5',     speed:1.3 },
+    connectBtn:  { grid:'gridConnect',  speed:0.35 },
+    btnDiscard:  { grid:'gridDiscard',  speed:1 },
+    btnSaveRec:  { grid:'gridSaveRec',  speed:1 },
+    btnLoadPdf:      { grid:'gridLoadPdf',      speed:1 },
+    btnWriteScript:  { grid:'gridWriteScript',  speed:1 },
+    btnLoadSaved:    { grid:'gridLoadSaved',    speed:1 },
+    recordBtnR:  { grid:'gridR',        speedIn:1.2, speedOut:0.8, direction:'vertical' },
+    opt1R:       { grid:'optGrid1R',    speed:1.3 },
+    opt2R:       { grid:'optGrid2R',    speed:1.3 },
+    opt4R:       { grid:'optGrid4R',    speed:1.3 },
+    opt5R:       { grid:'optGrid5R',    speed:1.3 },
+    btnDiscardR: { grid:'gridDiscardR', speed:1 },
+    btnSaveRecR: { grid:'gridSaveRecR', speed:1 }
+  };
+
+  function prepareButtonCubes(id, mode){
+    // Red de seguridad: si un botón nuevo no está en BTN_MAP, usa su propia
+    // rejilla de cubos y velocidad normal — la pantalla JAMÁS debe morirse
+    // por un registro faltante (lección del error 'speedIn').
+    const btnEl = document.getElementById(id);
+    const gridEl = btnEl ? btnEl.querySelector('.btn-cubes') : null;
+    const cfg = BTN_MAP[id] || { grid: gridEl ? gridEl.id : null, speed: 1 };
+    if(!cfg.grid) return;
+    const speed = mode === 'out' ? (cfg.speedOut ?? cfg.speed ?? 1) : (cfg.speedIn ?? cfg.speed ?? 1);
+    const spread = Math.round(SPREAD_MS * speed);
+    const trans = Math.round(TRANS_MS * speed);
+    // Al entrar (armarse), el barrido va al revés (derecha a izquierda) —
+    // así se siente como un movimiento natural antes de continuar con el
+    // barrido de construcción del botón (que sigue yendo izquierda a derecha).
+    const reverse = mode !== 'out';
+    buildCubeGrid(cfg.grid, id, spread, trans, cfg.direction || 'horizontal', reverse);
+  }
+
+  function glowBurst(gridId, ms){
+    const grid = document.getElementById(gridId);
+    if(!grid) return;
+    grid.classList.add('glow');
+    setTimeout(() => grid.classList.remove('glow'), ms);
+  }
+
+  /* Aparece: la grilla completa de cubos se arma -> se funde con la burbuja sólida -> cubos se ocultan */
+  function materialize(id){
+    prepareButtonCubes(id, 'in');
+    const btn = document.getElementById(id);
+    const cfg = BTN_MAP[id] || {};
+    const wait = materializeWait(id);
+    btn.classList.add('cubes-visible');
+    glowBurst(cfg.grid, wait + 150);
+    setTimeout(() => {
+      // El botón se revela de izquierda a derecha (clip-path) EXACTAMENTE
+      // a la vez que los cubos empiezan a desvanecerse — no después.
+      btn.classList.add('face-visible');
+      btn.classList.remove('cubes-visible');
+      showTutorialForActiveScreen();
+    }, wait);
+  }
+
+  /* Desaparece: la burbuja se disuelve en la grilla de cubos -> se dispersan y ocultan */
+  function dematerialize(id, onDone){
+    prepareButtonCubes(id, 'out');
+    const btn = document.getElementById(id);
+    const cfg = BTN_MAP[id] || {};
+    const wait = disperseWait(id);
+    btn.classList.remove('face-visible');
+    btn.classList.add('cubes-visible');
+    glowBurst(cfg.grid, wait + 150);
+    setTimeout(() => {
+      btn.classList.remove('cubes-visible');
+      btn.classList.remove('active');
+      onDone && onDone();
+    }, wait);
+  }
+
+  window.addEventListener('load', () => {
+    playStartupSound();
+    markSlotLoaded('saved');
+    updateFooterVisibility('mode');
+    setTimeout(() => { materialize('btnEmisor'); materialize('btnReceptor'); }, 450);
+  });
+
+  // El crédito solo se ve en la pantalla principal — en las demás se
+  // encimaba con el contenido y no tenía sentido estéticamente.
+  function updateFooterVisibility(screenId){
+    document.querySelector('.app-footer').classList.toggle('visible', screenId === 'mode');
+  }
+
+  const HEX_CHAIN_SPAN = 650;
+  const HEX_SETTLE = 260;
+  const BTN_SETTLE = 220;
+  const SCREEN_TRANS_MS = 560;
+  const SCREEN_SETTLE = 220;
+  const HERO_SETTLE = 220;
+
+  const SCREEN_BUILD = {
+    mode:          { hero: null,        finals: ['btnEmisor','btnReceptor'] },
+    emisor:        { hero: 'recordBtn', finals: ['opt1','opt2','opt4','opt5'] },
+    receptor:      { hero: 'connectBtn', finals: ['btnLoadPdf','btnWriteScript','btnLoadSaved'] },
+    'script-editor': { hero: null, finals: [] },
+    'script-saved':  { hero: null, finals: [] }
+  };
+
+  /* Jerarquía exacta pedida:
+     1) el botón que tocaste se disuelve Y los hexágonos brillan, a la par
+     2) el/los otro(s) botón(es) de esa pantalla se disuelve(n) después
+     3) la pantalla nueva carga
+     4) el botón principal se arma (el amarillo, muy acelerado)
+     5) los botones secundarios se arman al final (un poco más lentos)
+     "Volver" corre todo más rápido, en el mismo orden. */
+  function goTo(fromScreen, toScreen, clickedId, otherIds, isBack){
+    playScreenChangeSound();
+    handleRoleChange(fromScreen, toScreen); // enciende/apaga el motor real según la pantalla
+    clearBubbles();
+    document.querySelectorAll('.xbtn.tutorial-highlight').forEach(b => b.classList.remove('tutorial-highlight'));
+    // 1) el botón tocado (o el amarillo al volver) se disuelve solo, con su
+    //    propio respiro después.
+    dematerialize(clickedId);
+    const clickedWait = disperseWait(clickedId) + (isBack ? 160 : BTN_SETTLE);
+
+    setTimeout(() => {
+      // 2) los hexágonos brillan A LA PAR de los botones pequeños restantes
+      //    (ya no junto al botón tocado/amarillo).
+      chainFlashHexagons();
+      otherIds.forEach(id => dematerialize(id));
+
+      const hexWait = (isBack ? HEX_CHAIN_SPAN*0.45 : HEX_CHAIN_SPAN) + (isBack ? 80 : HEX_SETTLE);
+      const othersWait = otherIds.length
+        ? Math.max(...otherIds.map(disperseWait)) + (isBack ? 50 : BTN_SETTLE)
+        : 0;
+      const stage2Wait = Math.max(hexWait, othersWait);
+
+      setTimeout(() => {
+        document.getElementById('screen-' + fromScreen).classList.remove('active');
+        document.getElementById('screen-' + toScreen).classList.add('active');
+        updateFooterVisibility(toScreen);
+
+        const screenWait = (isBack ? SCREEN_TRANS_MS*0.55 : SCREEN_TRANS_MS) + (isBack ? 70 : SCREEN_SETTLE);
+        setTimeout(() => {
+          const build = SCREEN_BUILD[toScreen];
+          if(!build) return;
+          if(build.hero){
+            materialize(build.hero);
+            setTimeout(() => {
+              build.finals.forEach((id,i) => setTimeout(() => materialize(id), i*150));
+            }, materializeWait(build.hero) + (isBack ? 70 : HERO_SETTLE));
+          } else {
+            build.finals.forEach((id,i) => setTimeout(() => materialize(id), i*150));
+          }
+        }, screenWait);
+      }, stage2Wait);
+    }, clickedWait);
+  }
+
+  const OPTION_MIRROR = { opt1:'opt1R', opt2:'opt2R', opt4:'opt4R', opt5:'opt5R', opt1R:'opt1', opt2R:'opt2', opt4R:'opt4', opt5R:'opt5' };
+  /* Ahora cada opción HACE algo real además de encenderse — y sabe si le
+     toca actuar aquí mismo (emisor) o mandar la orden por la red (receptor). */
+  function toggleOption(el){
+    const base = el.id.endsWith('R') ? el.id.slice(0, -1) : el.id;
+
+    // Cámara: es botón de acción, no interruptor — destello breve y a actuar.
+    if(base === 'opt2'){
+      playButtonSound();
+      forEachMirror('opt2', b => b.classList.add('active'));
+      setTimeout(() => forEachMirror('opt2', b => b.classList.remove('active')), 320);
+      if(role === 'emisor') flipCamera();
+      else sendCommand('switchCamera');
+      return;
+    }
+
+    playButtonSound();
+    el.classList.toggle('active');
+    const active = el.classList.contains('active');
+    const pairId = OPTION_MIRROR[el.id];
+    if(pairId){
+      const pairEl = document.getElementById(pairId);
+      if(pairEl) pairEl.classList.toggle('active', active);
+    }
+
+    if(base === 'opt1'){ // Espejo
+      if(role === 'emisor') setMirror(active, true);
+      else { setReceptorMirror(active); sendCommand('mirror', active); }
+    }
+    if(base === 'opt4' && role === 'receptor'){ // Cuenta regresiva, remota
+      sendCommand('countdown', active);
+    }
+    if(base === 'opt5'){ // Micrófono
+      if(role === 'emisor') setMic(active, true);
+      else sendCommand('mic', active);
+    }
+  }
+
+  /* =========================================================
+     TUTORIAL — recorrido paso a paso (una burbuja a la vez, con
+     siguiente/anterior) para que nunca se encimen entre sí.
+     ========================================================= */
+  let tutorialMode = false;
+  let tutorialSteps = [];
+  let tutorialIndex = 0;
+
+  const TUTORIAL_TEXT = {
+    btnEmisor:   { title:'Emisor',   text:'Transmite la pantalla de este dispositivo hacia otro.' },
+    btnReceptor: { title:'Receptor', text:'Recibe la transmisión de otro dispositivo.' },
+    recordBtn:   { title:'Captura',  text:'Inicia o detiene la grabación de pantalla.' },
+    opt1:        { title:'Espejo',   text:'Invierte la imagen como espejo.' },
+    opt2:        { title:'Cámara',   text:'Cambia entre cámara frontal y trasera.' },
+    opt4:        { title:'Cuenta regresiva', text:'Actívala para tener 3 segundos antes de que empiece a grabar.' },
+    opt5:        { title:'Micrófono', text:'Enciende o apaga el audio de la grabación — incluso a media captura.' },
+    connectBtn:  { title:'Conectar', text:'Usa el código de 4 dígitos que ves en el emisor.' },
+    btnLoadPdf:      { title:'Cargar PDF/Word', text:'Sube un guion desde un archivo PDF o Word.' },
+    btnWriteScript:  { title:'Escribir guion',  text:'Redacta tu propio guion dentro de la app.' },
+    btnLoadSaved:    { title:'Cargar guardado', text:'Recupera el último guion que guardaste.' }
+  };
+
+  const SCREEN_TOUR_ORDER = {
+    mode:     ['btnEmisor','btnReceptor'],
+    emisor:   ['recordBtn','opt1','opt2','opt4','opt5'],
+    receptor: ['connectBtn','btnLoadPdf','btnWriteScript','btnLoadSaved']
+  };
+
+  function clearBubbles(){
+    document.querySelectorAll('.tutorial-bubble').forEach(b => b.remove());
+  }
+
+  function showBubbleFor(id){
+    const el = document.getElementById(id);
+    const info = TUTORIAL_TEXT[id];
+    if(!el || !info) return;
+    const rect = el.getBoundingClientRect();
+    if(rect.width === 0) return;
+
+    const bubble = document.createElement('div');
+    const showBelow = rect.top < 130;
+    bubble.className = 'tutorial-bubble ' + (showBelow ? 'arrow-top' : 'arrow-bottom');
+    bubble.innerHTML = `
+      <div class="tb-title">${info.title}</div>
+      <div class="tb-text">${info.text}</div>
+      <div class="tb-nav">
+        <span class="tb-count">${tutorialIndex+1} / ${tutorialSteps.length}</span>
+        <span class="tb-btns">
+          ${tutorialIndex>0 ? '<button onclick="tutorialStep(-1)">‹ Antes</button>' : ''}
+          ${tutorialIndex<tutorialSteps.length-1 ? '<button onclick="tutorialStep(1)">Siguiente ›</button>' : '<button onclick="toggleTutorial()">Cerrar ✕</button>'}
+        </span>
+      </div>`;
+    document.body.appendChild(bubble);
+
+    const top = showBelow ? rect.bottom + 14 : rect.top - 14;
+    bubble.style.top = top + 'px';
+    requestAnimationFrame(() => {
+      const bw = bubble.offsetWidth, bh = bubble.offsetHeight;
+      let left = rect.left + rect.width/2 - bw/2;
+      left = Math.max(8, Math.min(window.innerWidth - 8 - bw, left));
+      bubble.style.left = left + 'px';
+      if(!showBelow) bubble.style.top = (top - bh) + 'px';
+      bubble.classList.add('show');
+    });
+
+    // Resalta el botón que se está explicando
+    document.querySelectorAll('.xbtn.tutorial-highlight').forEach(b => b.classList.remove('tutorial-highlight'));
+    el.classList.add('tutorial-highlight');
+  }
+
+  function tutorialStep(delta){
+    playTutorialNavSound();
+    tutorialIndex = Math.max(0, Math.min(tutorialSteps.length-1, tutorialIndex + delta));
+    clearBubbles();
+    showBubbleFor(tutorialSteps[tutorialIndex]);
+  }
+
+  function currentScreenId(){
+    const el = document.querySelector('.screen.active');
+    return el ? el.id.replace('screen-','') : 'mode';
+  }
+
+  function showTutorialForActiveScreen(){
+    if(!tutorialMode) return;
+    clearBubbles();
+    const order = SCREEN_TOUR_ORDER[currentScreenId()] || [];
+    tutorialSteps = order.filter(id => {
+      const el = document.getElementById(id);
+      return el && el.classList.contains('face-visible');
+    });
+    tutorialIndex = 0;
+    if(tutorialSteps.length) showBubbleFor(tutorialSteps[0]);
+  }
+
+  function toggleTutorial(){
+    playToggleSound();
+    tutorialMode = !tutorialMode;
+    document.getElementById('helpToggle').classList.toggle('active', tutorialMode);
+    document.getElementById('helpLabel').textContent = tutorialMode ? 'Ocultar' : 'Tutorial';
+    if(tutorialMode) showTutorialForActiveScreen();
+    else {
+      clearBubbles();
+      document.querySelectorAll('.xbtn.tutorial-highlight').forEach(b => b.classList.remove('tutorial-highlight'));
+    }
+  }
+
+  let recording = false, timerInterval = null, seconds = 0;
+
+  function toggleRecord(){
+    if(role === 'receptor'){
+      // El receptor no graba nada: manda la orden al emisor y refleja el
+      // estado de inmediato. (Si el emisor tiene cuenta regresiva activa,
+      // su captura real empieza tras el 3-2-1.)
+      if(!recording){ sendCommand('startRecording'); startCapture(); }
+      else { sendCommand('stopRecording'); stopCapture(); }
+      return;
+    }
+    if(!recording){
+      if(document.getElementById('opt4').classList.contains('active')){
+        startCountdown(() => startCapture());
+      } else {
+        startCapture();
+      }
+    } else {
+      stopCapture();
+    }
+  }
+
+  // Aplica un cambio a un elemento Y a su pareja espejada (si existe),
+  // para que el control remoto en el Receptor y los botones del Emisor
+  // siempre muestren exactamente lo mismo.
+  function forEachMirror(baseId, fn){
+    ['', 'R'].forEach(suffix => {
+      const el = document.getElementById(baseId + suffix);
+      if(el) fn(el);
+    });
+  }
+
+  function startCapture(){
+    if(recording) return; // evita dobles arranques (orden remota + toque local)
+    playButtonSound();
+    recording = true;
+    forEachMirror('saveConfirm', panel => panel.classList.remove('show'));
+    if(role === 'emisor'){ startRecorder(); sendEvent('recordingStarted'); }
+    forEachMirror('recordBtn', btn => btn.classList.add('recording')); // verde -> naranja
+    forEachMirror('recordLabel', label => label.textContent = 'DETENER CAPTURA');
+    seconds = 0;
+    forEachMirror('timer', timer => { timer.style.display = 'block'; timer.textContent = '00:00'; });
+    timerInterval = setInterval(() => {
+      seconds++;
+      const m = String(Math.floor(seconds/60)).padStart(2,'0');
+      const s = String(seconds%60).padStart(2,'0');
+      forEachMirror('timer', timer => timer.textContent = m + ':' + s);
+    }, 1000);
+  }
+
+  function stopCapture(){
+    if(!recording) return;
+    playStartRecordSound();
+    recording = false;
+    if(role === 'emisor'){ stopRecorder(); sendEvent('recordingStopped'); }
+    clearInterval(timerInterval);
+    forEachMirror('recordBtn', btn => btn.classList.remove('recording')); // naranja -> verde
+    forEachMirror('recordLabel', label => label.textContent = 'INICIAR CAPTURA');
+    forEachMirror('timer', timer => timer.style.display = 'none');
+    forEachMirror('saveConfirm', panel => panel.classList.add('show'));
+    materialize('btnDiscard');
+    materialize('btnSaveRec');
+    if(document.getElementById('remotePanel').classList.contains('show')){
+      materialize('btnDiscardR');
+      materialize('btnSaveRecR');
+    }
+  }
+
+  let resolvingFromRemote = false; // evita el eco receptor→emisor→receptor
+  function resolveRecording(save){
+    playButtonSound();
+    forEachMirror('saveConfirm', panel => panel.classList.remove('show'));
+
+    if(role === 'emisor'){
+      if(save) saveRecording(); else discardRecording();
+      sendEvent('recordingResolved', save);
+    } else if(!resolvingFromRemote){
+      sendCommand('resolveRecording', save);
+    }
+
+    const st = document.getElementById('statusText');
+    st.textContent = save ? 'Grabación guardada ✓' : 'Grabación descartada';
+    setTimeout(() => { st.textContent = emisorBaseStatus; }, 2200);
+  }
+
+  // Cuenta regresiva 3-2-1 antes de empezar, usando el mismo sonido de botón
+  function startCountdown(onDone){
+    const overlay = document.getElementById('countdownOverlay');
+    const numEl = document.getElementById('countdownNumber');
+    const seq = [3,2,1];
+    let i = 0;
+    overlay.classList.add('show');
+    function showNext(){
+      if(i >= seq.length){
+        overlay.classList.remove('show');
+        onDone();
+        return;
+      }
+      numEl.textContent = seq[i];
+      numEl.style.animation = 'none';
+      void numEl.offsetWidth;
+      numEl.style.animation = '';
+      playButtonSound();
+      i++;
+      setTimeout(showNext, 800);
+    }
+    showNext();
+  }
+
+  /* =========================================================
+     LECTOR DE GUION (teleprompter) — vive en el Receptor porque
+     es el dispositivo que NO se está grabando. Tres fuentes
+     independientes (PDF/Word, escrito a mano, guardado) para
+     poder intercalar entre una y otra con su propio ▶.
+     ========================================================= */
+  let scriptSlots = { file:'', editor:'', saved: localStorage.getItem('xstream_script') || '' };
+  let prompterTimer = null;
+  let prompterOffset = 0;
+  let prompterPaused = false;
+  let prompterSpeed = 0.6;
+  let currentSlot = null; // cuál de los 3 se está leyendo ahora mismo
+
+  const SLOT_BTN_ID = { file:'playBtnFile', editor:'playBtnEditor', saved:'playBtnSaved' };
+
+  function markSlotLoaded(slot){
+    const btn = document.getElementById(SLOT_BTN_ID[slot]);
+    if(scriptSlots[slot]) btn.classList.add('loaded');
+    else btn.classList.remove('loaded');
+  }
+
+  // Refleja en los 3 botones ▶ cuál está sonando ahora (con ⏸) y cuáles
+  // solo están listos para reproducirse (verde, con ▶).
+  function updatePlayIcons(){
+    ['file','editor','saved'].forEach(slot => {
+      const btn = document.getElementById(SLOT_BTN_ID[slot]);
+      const isActive = slot === currentSlot && prompterTimer && !prompterPaused;
+      btn.textContent = isActive ? '⏸' : '▶';
+      btn.classList.toggle('playing', isActive);
+    });
+  }
+
+  function loadExternalScript(src){
+    return new Promise((resolve, reject) => {
+      if(document.querySelector(`script[src="${src}"]`)) return resolve();
+      const s = document.createElement('script');
+      s.src = src; s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  function setProgress(fraction){
+    const bar = document.getElementById('loadProgressBar');
+    const wrap = document.getElementById('loadProgress');
+    wrap.classList.add('active');
+    bar.classList.remove('indeterminate');
+    bar.style.width = Math.round(fraction * 100) + '%';
+  }
+  function setProgressIndeterminate(){
+    const bar = document.getElementById('loadProgressBar');
+    document.getElementById('loadProgress').classList.add('active');
+    bar.classList.add('indeterminate');
+  }
+  function hideProgress(){
+    setTimeout(() => {
+      document.getElementById('loadProgress').classList.remove('active');
+      document.getElementById('loadProgressBar').style.width = '0%';
+      document.getElementById('loadProgressBar').classList.remove('indeterminate');
+    }, 400);
+  }
+
+  async function extractPdfText(file){
+    setProgress(0.05);
+    await loadExternalScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+    const buf = await file.arrayBuffer();
+    const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+    let text = '';
+    for(let p = 1; p <= pdf.numPages; p++){
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      text += content.items.map(it => it.str).join(' ') + '\n\n';
+      setProgress(p / pdf.numPages); // progreso real, página por página
+    }
+    return text;
+  }
+
+  async function extractDocxText(file){
+    setProgressIndeterminate();
+    await loadExternalScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js');
+    const buf = await file.arrayBuffer();
+    const result = await window.mammoth.extractRawText({ arrayBuffer: buf });
+    return result.value;
+  }
+
+  async function handleScriptFile(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    document.getElementById('scriptStatus').textContent = 'Leyendo ' + file.name + '…';
+
+    async function readOnce(){
+      if(ext === 'txt'){ setProgressIndeterminate(); return await file.text(); }
+      if(ext === 'pdf') return await extractPdfText(file);
+      if(ext === 'docx') return await extractDocxText(file);
+      return null;
+    }
+
+    if(ext !== 'txt' && ext !== 'pdf' && ext !== 'docx'){
+      document.getElementById('scriptStatus').textContent = 'Formato no soportado (usa .pdf, .docx o .txt).';
+      hideProgress();
+      return;
+    }
+
+    try{
+      let text;
+      try{
+        text = await readOnce();
+      }catch(firstErr){
+        // Reintento automático — a veces la librería tarda en quedar lista
+        // desde el CDN la primera vez.
+        document.getElementById('scriptStatus').textContent = 'Reintentando…';
+        await new Promise(r => setTimeout(r, 600));
+        text = await readOnce();
+      }
+      scriptSlots.file = text.trim();
+      markSlotLoaded('file');
+      const words = scriptSlots.file.split(/\s+/).filter(Boolean).length;
+      document.getElementById('scriptStatus').textContent = `"${file.name}" listo — ${words} palabras. Toca ▶ para leerlo.`;
+      hideProgress();
+    }catch(err){
+      playErrorSound();
+      document.getElementById('scriptStatus').textContent = 'No se pudo leer el archivo — revisa que sea un PDF o Word válido.';
+      hideProgress();
+    }
+  }
+
+  function playSlot(slot){
+    const text = scriptSlots[slot];
+    if(!text){
+      playButtonSound();
+      playErrorSound();
+      const names = { file:'Cargar PDF/Word', editor:'Escribir guion', saved:'Cargar guardado' };
+      document.getElementById('scriptStatus').textContent = `"${names[slot]}" todavía no tiene texto.`;
+      return;
+    }
+    // Si ya es el que está sonando, el botón funciona como pausa/reanudar.
+    if(slot === currentSlot && prompterTimer){
+      togglePrompterScroll();
+      updatePlayIcons();
+      return;
+    }
+    playButtonSound();
+    currentSlot = slot;
+    document.getElementById('prompterText').textContent = text;
+    document.getElementById('prompterOverlay').classList.toggle('con-guion', !!text);
+    startPrompterScroll();
+    updatePlayIcons();
+    const words = text.split(/\s+/).filter(Boolean).length;
+    document.getElementById('scriptStatus').textContent = `Leyendo — ${words} palabras.`;
+  }
+
+  /* Escribir guion y Cargar guardado ahora llevan a su propia pantalla
+     completa — así nunca se queda contenido "atrapado" sin poder bajar. */
+  function openScriptEditor(){
+    document.getElementById('scriptTextarea').value = scriptSlots.editor;
+    goTo('receptor', 'script-editor', 'btnWriteScript', ['connectBtn','btnLoadPdf','btnLoadSaved']);
+  }
+
+  function saveScript(){
+    playButtonSound();
+    scriptSlots.editor = document.getElementById('scriptTextarea').value;
+    localStorage.setItem('xstream_script', scriptSlots.editor);
+    scriptSlots.saved = scriptSlots.editor;
+    markSlotLoaded('editor');
+    markSlotLoaded('saved');
+    returnToReceptor('script-editor');
+    setTimeout(() => {
+      document.getElementById('scriptStatus').textContent = 'Guion escrito y guardado. Toca ▶ para leerlo.';
+    }, 500);
+  }
+
+  function openSavedScreen(){
+    scriptSlots.saved = localStorage.getItem('xstream_script') || '';
+    markSlotLoaded('saved');
+    const hasSaved = !!scriptSlots.saved;
+    document.getElementById('savedEmptyState').style.display = hasSaved ? 'none' : 'block';
+    document.getElementById('savedFilledState').style.display = hasSaved ? 'block' : 'none';
+    if(hasSaved) document.getElementById('savedPreview').textContent = scriptSlots.saved;
+    goTo('receptor', 'script-saved', 'btnLoadSaved', ['connectBtn','btnLoadPdf','btnWriteScript']);
+  }
+
+  /* Regreso simple al receptor desde las pantallas de guion — no hay un
+     "botón tocado" que disolver (son pantallas de solo texto/botones
+     planos), así que vamos directo a: hexágonos -> pantalla -> botones. */
+  function returnToReceptor(fromScreen){
+    playScreenChangeSound();
+    chainFlashHexagons();
+    clearBubbles();
+    document.querySelectorAll('.xbtn.tutorial-highlight').forEach(b => b.classList.remove('tutorial-highlight'));
+    const hexWait = HEX_CHAIN_SPAN*0.45 + 80;
+    setTimeout(() => {
+      document.getElementById('screen-' + fromScreen).classList.remove('active');
+      document.getElementById('screen-receptor').classList.add('active');
+      updateFooterVisibility('receptor');
+      setTimeout(() => {
+        materialize('connectBtn');
+        materialize('btnLoadPdf');
+        materialize('btnWriteScript');
+        materialize('btnLoadSaved');
+      }, SCREEN_TRANS_MS*0.6 + 70);
+    }, hexWait);
+  }
+
+  /* Velocidad como puntos tocables (más acorde al estilo HUD que un
+     slider nativo del sistema operativo). */
+  const SPEED_LEVELS = 6;
+  let speedLevel = 4;
+  function buildSpeedDots(){
+    const wrap = document.getElementById('speedDots');
+    wrap.innerHTML = '';
+    for(let i=1;i<=SPEED_LEVELS;i++){
+      const dot = document.createElement('div');
+      dot.className = 'speed-dot' + (i <= speedLevel ? ' on' : '');
+      dot.onclick = () => setSpeedLevel(i);
+      wrap.appendChild(dot);
+    }
+  }
+  function setSpeedLevel(level){
+    playButtonSound();
+    speedLevel = level;
+    prompterSpeed = 0.2 + (level - 1) * 0.28;
+    buildSpeedDots();
+  }
+  buildSpeedDots();
+  setSpeedLevel(speedLevel);
+
+  /* Video ampliado a pantalla completa — funciona igual en compu y en
+     celular; como usa position:fixed cubriendo todo el viewport, se
+     adapta solo tanto a vertical como a horizontal sin configuración
+     aparte. */
+  /* "Levanta" el recuadro de su lugar normal a una posición libre (fixed),
+     conservando su tamaño y ubicación actual para que no salte — a partir
+     de ahí ya no está atado al panel y se puede mover a cualquier parte
+     de la pantalla, incluso fuera de los límites de la app. */
+  function liftVideoToFloating(frame){
+    if(frame.classList.contains('floating')) return;
+    const rect = frame.getBoundingClientRect();
+    frame.style.width = rect.width + 'px';
+    frame.style.height = rect.height + 'px';
+    frame.style.left = rect.left + 'px';
+    frame.style.top = rect.top + 'px';
+    frame.classList.add('floating');
+  }
+
+  function updateExpandGlyph(frame){
+    const btn = frame.querySelector('.expand-btn');
+    const libre = frame.classList.contains('floating') || frame.classList.contains('expanded');
+    btn.textContent = libre ? '✕' : '⛶';
+    btn.title = libre ? 'Regresar a su lugar' : 'Ampliar';
+  }
+
+  function toggleVideoExpand(e, frame){
+    e.stopPropagation();
+    playButtonSound();
+    frame = frame || document.getElementById('videoFrame');
+    const libre = frame.classList.contains('floating') || frame.classList.contains('expanded');
+    if(!libre){
+      // ⛶ Ampliar: se libera del panel en grande — y ahí se queda, móvil y
+      // estirable, hasta que TÚ toques la ✕. Nunca regresa solo.
+      liftVideoToFloating(frame);
+      frame.style.width = 'min(640px, 82vw)';
+      frame.style.height = 'min(420px, 70vh)';
+      frame.style.left = '9vw';
+      frame.style.top = '15vh';
+      frame.classList.add('expanded');
+    } else {
+      // ✕ Regresa a su lugar del panel — SOLO con este botón.
+      frame.classList.remove('expanded', 'floating');
+      frame.style.position = ''; frame.style.top = ''; frame.style.left = '';
+      frame.style.width = ''; frame.style.height = ''; frame.style.margin = '';
+    }
+    updateExpandGlyph(frame);
+    if(frame.id === 'videoFrame') applyRemoteVideoLayout(); // el giro se reacomoda al cambiar tamaño
+  }
+
+  /* Estirar con su propia manija (⇲): mouse o dedo, sin esquinas escondidas.
+     Al usarla, el visor también se libera del panel (y no regresa solo). */
+  function makeResizable(handleId, frameId, onResized){
+    const handle = document.getElementById(handleId);
+    const frame = document.getElementById(frameId);
+    let resizing = false, startX = 0, startY = 0, originW = 0, originH = 0;
+
+    function onDown(e){
+      e.stopPropagation();
+      e.preventDefault();
+      liftVideoToFloating(frame);
+      updateExpandGlyph(frame);
+      resizing = true;
+      const p = e.touches ? e.touches[0] : e;
+      startX = p.clientX; startY = p.clientY;
+      const rect = frame.getBoundingClientRect();
+      originW = rect.width; originH = rect.height;
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+      window.addEventListener('touchmove', onMove, { passive:false });
+      window.addEventListener('touchend', onUp);
+    }
+    function onMove(e){
+      if(!resizing) return;
+      e.preventDefault();
+      const p = e.touches ? e.touches[0] : e;
+      frame.style.width = Math.min(Math.max(180, originW + (p.clientX - startX)), window.innerWidth - 10) + 'px';
+      frame.style.height = Math.min(Math.max(120, originH + (p.clientY - startY)), window.innerHeight - 10) + 'px';
+      if(onResized) onResized();
+    }
+    function onUp(){
+      resizing = false;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+    }
+    handle.addEventListener('mousedown', onDown);
+    handle.addEventListener('touchstart', onDown, { passive:false });
+  }
+  makeResizable('resizeHandle', 'videoFrame', () => applyRemoteVideoLayout());
+  makeResizable('resizeHandleE', 'previewFrame', null);
+
+  /* Arrastrar el recuadro de video libremente por TODA la pantalla — ya
+     no importa si está "ampliado" o no, ni si el punto de destino queda
+     fuera del panel de la app. Funciona igual en mouse y en táctil. */
+  function makeDraggable(frameId){
+    const frame = document.getElementById(frameId);
+    let dragging = false, startX = 0, startY = 0, originLeft = 0, originTop = 0;
+
+    function onDown(e){
+      // No empieces a arrastrar si el toque cayó sobre alguno de los OTROS
+      // controles del marco (ampliar, estirar, girar) — esos manejan su
+      // propio gesto por separado. El ícono ✥ SÍ arrastra: es justo su
+      // trabajo, solo que ahora también puedes agarrar CUALQUIER otra
+      // parte del marco — mucho más fácil que cazar un botón pequeñito.
+      if(e.target.closest('.expand-btn, .resize-handle-btn, .rotate-btn')) return;
+      e.stopPropagation();
+      liftVideoToFloating(frame);
+      updateExpandGlyph(frame);
+      dragging = true;
+      frame.classList.add('dragging');
+      const point = e.touches ? e.touches[0] : e;
+      startX = point.clientX; startY = point.clientY;
+      originLeft = parseFloat(frame.style.left) || 0;
+      originTop = parseFloat(frame.style.top) || 0;
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+      window.addEventListener('touchmove', onMove, { passive:false });
+      window.addEventListener('touchend', onUp);
+    }
+    function onMove(e){
+      if(!dragging) return;
+      e.preventDefault();
+      const point = e.touches ? e.touches[0] : e;
+      const dx = point.clientX - startX;
+      const dy = point.clientY - startY;
+      frame.style.left = (originLeft + dx) + 'px';
+      frame.style.top = (originTop + dy) + 'px';
+    }
+    function onUp(){
+      dragging = false;
+      frame.classList.remove('dragging');
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+    }
+    frame.addEventListener('mousedown', onDown);
+    frame.addEventListener('touchstart', onDown, { passive:true });
+  }
+  makeDraggable('videoFrame');    // visor del receptor
+  makeDraggable('previewFrame');  // cámara del emisor
+
+  function startPrompterScroll(){
+    stopPrompterScroll();
+    prompterOffset = 0;
+    prompterPaused = false;
+    const textEl = document.getElementById('prompterText');
+    textEl.style.transform = 'translateY(0px)';
+    document.getElementById('promptToggleBtn').classList.add('show');
+    document.getElementById('promptToggleBtn').textContent = '⏸';
+    prompterTimer = setInterval(() => {
+      if(prompterPaused) return;
+      prompterOffset -= prompterSpeed;
+      textEl.style.transform = `translateY(${prompterOffset}px)`;
+    }, 50);
+  }
+  function stopPrompterScroll(){
+    if(prompterTimer) clearInterval(prompterTimer);
+    prompterTimer = null;
+  }
+  function togglePrompterScroll(e){
+    if(e) e.stopPropagation(); // no debe abrir/cerrar el video expandido
+    playButtonSound();
+    prompterPaused = !prompterPaused;
+    document.getElementById('promptToggleBtn').textContent = prompterPaused ? '▶' : '⏸';
+    updatePlayIcons();
+  }
+
+  // Color del texto del teleprompter — útil según el fondo real de la
+  // cámara (blanco para fondos oscuros, negro para fondos claros).
+  function setPrompterColor(e, color){
+    e.stopPropagation();
+    playButtonSound();
+    document.getElementById('prompterText').style.color = color;
+    document.getElementById('prompterText').style.textShadow = color === '#000000' ? 'none' : `0 0 8px ${color}66`;
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+  }
+
+  /* =========================================================
+     MOTOR REAL DE CONEXIÓN — aquí terminó la simulación.
+     Mismo protocolo que la app nativa de Android (XstreamProV2):
+       · id del emisor: "xspeculum-" + código de 4 dígitos
+       · el receptor abre el canal de DATOS; el emisor, al verlo,
+         inicia la llamada de MEDIA con su cámara
+       · comandos por el canal de datos, como JSON:
+         {type:"command", action, value}
+     Gracias a eso este ÚNICO archivo sirve para todo:
+       celular (Emisor) ↔ compu (Receptor) con esta misma página,
+       y compu (Receptor) ↔ APK nativo, sin cambiar nada.
+     ========================================================= */
+  /* ---------- MODO OBS ----------
+     Abriendo la página con ?obs=CODIGO (el enlace se copia con el botón
+     "ENLACE OBS" al estar conectado), la página se vuelve una fuente
+     limpia para OBS Studio: solo el video a pantalla completa, sin
+     botones, SIN SONIDOS (irían al aire), conexión automática con ese
+     código y reintento solo si se cae. */
+  const OBS_CODE = new URLSearchParams(location.search).get('obs');
+  const OBS_MODE = !!(OBS_CODE && /^\d{4}$/.test(OBS_CODE));
+  if(OBS_MODE) document.body.classList.add('obs-mode');
+  let obsRetryT = null;
+  function obsRetry(){
+    if(!OBS_MODE) return;
+    clearTimeout(obsRetryT);
+    obsRetryT = setTimeout(() => {
+      if(role === 'receptor' && !document.getElementById('videoFrame').classList.contains('live')) connectReceptor();
+    }, 4000);
+  }
+
+  let role = null;            // 'emisor' | 'receptor' | null
+  let code = '';
+  let peer = null, dataConn = null, mediaCall = null;
+  let localStream = null, mirrorOn = false, micOn = true, facing = 'user';
+  let mediaRecorder = null, recChunks = [], lastBlob = null;
+  let emisorBaseStatus = 'Esperando receptor…';
+  let idTries = 0;
+  let wakeLock = null;
+  let linkWatch = null;
+
+  /* STUN de Google + TURN público gratuito (Open Relay) — el TURN es el
+     que salva la conexión cuando celular y compu están en REDES DISTINTAS
+     (datos móviles vs Wi-Fi, o módems separados), donde STUN solo no
+     alcanza y la conexión se queda "buscando" para siempre. */
+  const ICE_CONFIG = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      {
+        urls: [
+          'turn:openrelay.metered.ca:80',
+          'turn:openrelay.metered.ca:443',
+          'turn:openrelay.metered.ca:443?transport=tcp'
+        ],
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      }
+    ]
+  };
+
+  /* Mantiene la pantalla del celular despierta mientras transmite — si el
+     teléfono se bloquea solo, el navegador congela la cámara y la señal
+     se cae "sin razón aparente". */
+  async function keepAwake(){
+    try{
+      if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+    }catch(e){ /* algunos navegadores lo niegan (batería baja) — no pasa nada */ }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'visible' && role === 'emisor') keepAwake();
+  });
+
+  function clearLinkWatch(){ clearTimeout(linkWatch); linkWatch = null; }
+
+  function peerListo(){
+    if(typeof Peer !== 'undefined') return true;
+    playErrorSound();
+    flashStatus('No cargó PeerJS — revisa tu internet y recarga la página.');
+    return false;
+  }
+
+  function setEmisorStatus(msg, esBase){
+    const st = document.getElementById('statusText');
+    st.textContent = msg;
+    if(esBase) emisorBaseStatus = msg;
+    st.classList.toggle('connected', /conectado/i.test(msg));
+  }
+
+  /* Aviso breve que respeta lo que había antes en pantalla. */
+  function flashStatus(msg){
+    if(role === 'emisor'){
+      setEmisorStatus(msg);
+      setTimeout(() => setEmisorStatus(emisorBaseStatus, true), 2200);
+    } else {
+      const el = document.getElementById('scriptStatus');
+      const prev = el.textContent;
+      el.textContent = msg;
+      setTimeout(() => { el.textContent = prev; }, 2200);
+    }
+  }
+
+  function handleRoleChange(fromScreen, toScreen){
+    if(toScreen === 'emisor') startEmisor();
+    else if(toScreen === 'receptor' && fromScreen === 'mode') startReceptor();
+    else if(toScreen === 'mode' && (fromScreen === 'emisor' || fromScreen === 'receptor')) stopRole();
+  }
+
+  /* ---------- Mensajería compartida por el canal de datos ---------- */
+  function sendCommand(action, value){
+    if(dataConn && dataConn.open) dataConn.send({ type:'command', action:action, value: value === undefined ? false : value });
+    else flashStatus('Aún no hay emisor conectado.');
+  }
+  function sendEvent(name, value){
+    // Los eventos son avisos de cortesía emisor→receptor; si no hay nadie
+    // escuchando (grabación en solitario), simplemente no se mandan.
+    if(dataConn && dataConn.open) dataConn.send({ type:'event', name:name, value: value === undefined ? null : value });
+  }
+
+  /* ============================================================
+     EMISOR — el celular: cámara, código en el anillo y grabación
+     ============================================================ */
+  async function startEmisor(){
+    if(!peerListo()) return;
+    role = 'emisor';
+    idTries = 0;
+    code = String(Math.floor(1000 + Math.random() * 9000));
+    document.getElementById('codeDigits').textContent = code;
+    setEmisorStatus('Encendiendo cámara…', true);
+    keepAwake(); // que el teléfono no se duerma a media transmisión
+    createEmisorPeer();
+    await openCamera();
+  }
+
+  function createEmisorPeer(){
+    if(peer){ try{ peer.destroy(); }catch(e){} }
+    peer = new Peer('xspeculum-' + code, { config: ICE_CONFIG }); // nube de PeerJS — la misma que usa el APK
+    peer.on('open', () => {
+      if(role === 'emisor' && localStream && !dataConn) setEmisorStatus('Esperando receptor…', true);
+    });
+    peer.on('connection', c => {
+      if(dataConn){ try{ dataConn.close(); }catch(e){} } // el receptor recargó: fuera la conexión vieja
+      dataConn = c;
+      c.on('open', () => {
+        setEmisorStatus('Receptor conectado ✓ — transmitiendo', true);
+        playConnectedSound();
+        callReceptor(c.peer);
+        // Foto del estado actual, para que el control remoto amanezca
+        // sincronizado (espejo, cuenta regresiva, y si ya se graba) —
+        // incluso si el receptor recargó la página a media sesión.
+        sendEvent('estado', {
+          mirror: mirrorOn,
+          mic: micOn,
+          countdown: document.getElementById('opt4').classList.contains('active'),
+          recording: recording,
+          segundos: seconds
+        });
+      });
+      c.on('data', handleRemoteMessage);
+      // Solo reacciona si la que se cerró sigue siendo LA conexión actual —
+      // si el receptor recargó la página, la vieja muere sin tumbar la nueva.
+      c.on('close', () => { if(dataConn === c) onLinkLost('emisor'); });
+    });
+    peer.on('error', err => {
+      if(err.type === 'unavailable-id' && idTries < 4){
+        // Ese código quedó ocupado en el broker — se genera otro y listo.
+        idTries++;
+        code = String(Math.floor(1000 + Math.random() * 9000));
+        document.getElementById('codeDigits').textContent = code;
+        createEmisorPeer();
+      } else {
+        playErrorSound();
+        setEmisorStatus('Error de red: ' + err.type, true);
+      }
+    });
+    peer.on('disconnected', () => { try{ peer.reconnect(); }catch(e){} });
+  }
+
+  async function openCamera(){
+    if(localStream) localStream.getTracks().forEach(t => t.stop());
+    // 'ideal' en vez de exacto: si el aparato no tiene esa camara (una sola
+    // lente, o una webcam de escritorio), usa la que haya en vez de fallar.
+    const video = { facingMode: { ideal: facing }, width:{ideal:1280}, height:{ideal:720} };
+    try{
+      localStream = await navigator.mediaDevices.getUserMedia({ video, audio:true });
+    }catch(e1){
+      try{ // sin permiso de micrófono: se graba sin audio, pero se graba
+        localStream = await navigator.mediaDevices.getUserMedia({ video });
+      }catch(e2){
+        playErrorSound();
+        setEmisorStatus('Sin acceso a la cámara — revisa permisos (y que la página esté en HTTPS).', true);
+        document.getElementById('previewStatus').textContent = 'Cámara bloqueada';
+        return;
+      }
+    }
+    // El micrófono respeta su interruptor aunque la cámara se reabra
+    // (cambio de lente): apagado sigue apagado.
+    localStream.getAudioTracks().forEach(t => t.enabled = micOn);
+    const v = document.getElementById('localVideo');
+    v.srcObject = localStream;
+    v.play().catch(() => {});
+    v.style.transform = mirrorOn ? 'scaleX(-1)' : '';
+    document.getElementById('previewFrame').classList.add('live');
+    document.getElementById('previewStatus').textContent = 'EN VIVO';
+    if(role === 'emisor' && !dataConn) setEmisorStatus('Esperando receptor…', true);
+    // Si ya hay llamada en curso (cambio de cámara), se intercambia la
+    // pista al vuelo, sin cortar la transmisión.
+    if(mediaCall && mediaCall.peerConnection){
+      const sender = mediaCall.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+      const track = localStream.getVideoTracks()[0];
+      if(sender && track) sender.replaceTrack(track);
+    }
+  }
+
+  function callReceptor(receptorId, intento){
+    const track = localStream && localStream.getVideoTracks()[0];
+    if(!track){
+      // La cámara puede tardar (permisos) — se reintenta un rato antes de rendirse.
+      if((intento || 0) < 20) return setTimeout(() => callReceptor(receptorId, (intento || 0) + 1), 300);
+      setEmisorStatus('Sin cámara — no se puede transmitir.', true);
+      return;
+    }
+    if(mediaCall){ try{ mediaCall.close(); }catch(e){} }
+    // Solo viaja la pista de VIDEO (igual que el APK); el audio se queda
+    // aquí para la grabación local — así el receptor no se escucha a sí mismo.
+    const mc = peer.call(receptorId, new MediaStream([track]));
+    mediaCall = mc;
+    mc.on('close', () => { if(mediaCall === mc) onLinkLost('emisor'); });
+    mc.on('error', () => { if(mediaCall === mc) onLinkLost('emisor'); });
+  }
+
+  function setMirror(on, uiYaActualizada){
+    mirrorOn = on;
+    document.getElementById('localVideo').style.transform = on ? 'scaleX(-1)' : '';
+    if(!uiYaActualizada) forEachMirror('opt1', el => el.classList.toggle('active', on));
+  }
+
+  function setMic(on, uiYaActualizada){
+    micOn = on;
+    // enabled=false graba silencio sin cortar la pista — por eso funciona
+    // también A MEDIA grabación, y la transmisión ni se entera.
+    if(localStream) localStream.getAudioTracks().forEach(t => t.enabled = on);
+    if(!uiYaActualizada) forEachMirror('opt5', el => el.classList.toggle('active', on));
+  }
+
+  async function flipCamera(){
+    if(recording){ playErrorSound(); flashStatus('Detén la captura para cambiar de cámara.'); return; }
+    facing = facing === 'user' ? 'environment' : 'user';
+    await openCamera();
+  }
+
+  /* Órdenes que llegan del receptor. El APK manda exactamente las mismas. */
+  function handleRemoteMessage(msg){
+    let d = msg;
+    if(typeof d === 'string'){ try{ d = JSON.parse(d); }catch(e){ return; } }
+    if(!d || d.type !== 'command') return;
+    switch(d.action){
+      case 'startRecording':
+        if(!recording){
+          if(document.getElementById('opt4').classList.contains('active')) startCountdown(() => startCapture());
+          else startCapture();
+        }
+        break;
+      case 'stopRecording': if(recording) stopCapture(); break;
+      case 'switchCamera': flipCamera(); break;
+      case 'mirror': setMirror(!!d.value); break;
+      case 'mic': setMic(!!d.value); break;
+      case 'countdown': forEachMirror('opt4', el => el.classList.toggle('active', !!d.value)); break;
+      case 'resolveRecording':
+        resolvingFromRemote = true;
+        resolveRecording(!!d.value);
+        resolvingFromRemote = false;
+        break;
+    }
+  }
+
+  /* ---------- Grabación real (vive en el emisor) ---------- */
+  function pickMime(){
+    const opciones = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4'];
+    for(const m of opciones){ if(window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m; }
+    return '';
+  }
+  function startRecorder(){
+    if(!localStream || !window.MediaRecorder){
+      flashStatus('Este navegador no puede grabar — la transmisión sigue normal.');
+      return;
+    }
+    recChunks = []; lastBlob = null;
+    const mime = pickMime();
+    try{ mediaRecorder = new MediaRecorder(localStream, mime ? {mimeType:mime} : undefined); }
+    catch(e){ mediaRecorder = null; flashStatus('No se pudo iniciar la grabación local.'); return; }
+    mediaRecorder.ondataavailable = ev => { if(ev.data && ev.data.size) recChunks.push(ev.data); };
+    mediaRecorder.onstop = () => { lastBlob = new Blob(recChunks, { type: mediaRecorder.mimeType || 'video/webm' }); };
+    mediaRecorder.start(1000);
+  }
+  function stopRecorder(){
+    if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  }
+  function saveRecording(intentos){
+    if(!lastBlob){
+      // El último pedazo del video puede tardar unos ms en llegar tras STOP.
+      if((intentos || 0) < 12) return setTimeout(() => saveRecording((intentos || 0) + 1), 250);
+      flashStatus('No hubo video que guardar.');
+      return;
+    }
+    const ext = lastBlob.type.includes('mp4') ? 'mp4' : 'webm';
+    const stamp = new Date().toISOString().slice(0,19).replace(/[-:T]/g,'').replace(/^(\d{8})/, '$1-');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(lastBlob);
+    a.download = 'xstreampro-' + stamp + '.' + ext;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    setEmisorStatus('Grabación guardada ✓ (carpeta Descargas)');
+    lastBlob = null; recChunks = [];
+  }
+  function discardRecording(){ lastBlob = null; recChunks = []; }
+
+  /* ============================================================
+     RECEPTOR — la compu: código, visor, teleprompter y control
+     ============================================================ */
+  function startReceptor(){
+    if(!peerListo()) return;
+    role = 'receptor';
+    if(peer){ try{ peer.destroy(); }catch(e){} }
+    peer = new Peer({ config: ICE_CONFIG }); // id aleatorio: el emisor le responde a quien lo llama
+    document.getElementById('videoStatusText').textContent = 'Sin señal';
+    peer.on('call', c => {
+      if(mediaCall){ try{ mediaCall.close(); }catch(e){} }
+      mediaCall = c;
+      c.answer(); // sin stream propio — aquí solo se recibe
+      c.on('stream', showRemoteStream);
+      c.on('close', () => { if(mediaCall === c) onLinkLost('receptor'); });
+    });
+    peer.on('error', err => {
+      playErrorSound();
+      const vst = document.getElementById('videoStatusText');
+      if(err.type === 'peer-unavailable'){
+        vst.textContent = OBS_MODE ? 'Esperando al emisor…' : 'No existe ese código — revisa el emisor';
+        obsRetry();
+      }
+      else vst.textContent = 'Error de red: ' + err.type;
+    });
+    peer.on('disconnected', () => { try{ peer.reconnect(); }catch(e){} });
+  }
+
+  function connectReceptor(){
+    if(role !== 'receptor' || !peer) return;
+    const codeIn = document.getElementById('codeInput').value.trim();
+    const vst = document.getElementById('videoStatusText');
+    if(!/^\d{4}$/.test(codeIn)){ playErrorSound(); vst.textContent = 'El código son 4 dígitos'; return; }
+    connectedCode = codeIn;
+    playButtonSound();
+    vst.textContent = 'Buscando ' + codeIn + '…';
+    if(dataConn){ try{ dataConn.close(); }catch(e){} }
+    const dc = peer.connect('xspeculum-' + codeIn, {
+      reliable: true,
+      serialization: 'json' // el APK lee texto JSON del canal — NO cambiar
+    });
+    dataConn = dc;
+    // Vigía 1: si en 10 s el canal ni siquiera abre, casi seguro el código
+    // no existe o el emisor se quedó sin red.
+    clearLinkWatch();
+    linkWatch = setTimeout(() => {
+      if(dataConn === dc && !dc.open){
+        playErrorSound();
+        vst.textContent = 'El emisor no responde — ¿está encendido y con señal?';
+      }
+    }, 10000);
+    dc.on('open', () => {
+      vst.textContent = 'Canal abierto — esperando video…';
+      // Vigía 2: canal abierto pero sin video en 12 s = el video no encuentra
+      // camino entre las dos redes (o la cámara del emisor está bloqueada).
+      clearLinkWatch();
+      linkWatch = setTimeout(() => {
+        if(dataConn === dc && !document.getElementById('videoFrame').classList.contains('live')){
+          playErrorSound();
+          vst.textContent = 'Canal abierto pero sin video — revisa la cámara del emisor';
+        }
+      }, 12000);
+    });
+    dc.on('data', handleReceptorMessage);
+    dc.on('close', () => { if(dataConn === dc) onLinkLost('receptor'); });
+  }
+
+  function showRemoteStream(stream){
+    const v = document.getElementById('remoteVideo');
+    v.srcObject = stream;
+    v.play().catch(() => {});
+    applyRemoteVideoLayout();
+    showConnectedUI();
+  }
+
+  /* Lo que antes hacía simulateReceptorConnect — ahora es la celebración
+     real de la conexión: mismo sonido, mismo armado en cubos del control. */
+  let connectedCode = '';
+  function copyObsLink(e){
+    e.stopPropagation();
+    playButtonSound();
+    const link = location.origin + location.pathname + '?obs=' + connectedCode;
+    const btn = document.getElementById('obsLinkBtn');
+    const listo = ok => {
+      btn.textContent = ok ? '✓ Enlace copiado — pégalo como fuente Navegador en OBS' : link;
+      setTimeout(() => { btn.textContent = '⧉ ENLACE PARA OBS STUDIO'; }, 3200);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(link).then(() => listo(true), () => listo(false));
+    } else {
+      const t = document.createElement('textarea');
+      t.value = link; document.body.appendChild(t); t.select();
+      try{ document.execCommand('copy'); listo(true); }catch(_){ listo(false); }
+      t.remove();
+    }
+  }
+
+  function showConnectedUI(){
+    clearLinkWatch();
+    playConnectedSound();
+    if(connectedCode) document.getElementById('obsLinkBtn').classList.add('show');
+    const frame = document.getElementById('videoFrame');
+    frame.classList.add('live');
+    document.getElementById('videoStatusText').textContent = 'EN VIVO';
+    if(scriptSlots.saved && !document.getElementById('prompterText').textContent) playSlot('saved');
+
+    // El control remoto solo tiene sentido una vez conectado — aparece
+    // armándose en cubos, igual que cualquier otro botón de la app.
+    const remote = document.getElementById('remotePanel');
+    if(!remote.classList.contains('show')){
+      remote.classList.add('show');
+      materialize('recordBtnR');
+      setTimeout(() => {
+        materialize('opt1R'); materialize('opt2R'); materialize('opt4R'); materialize('opt5R');
+      }, 300);
+    }
+  }
+
+  /* Avisos que manda el emisor WEB para que el control remoto quede en
+     sincronía perfecta. (El APK todavía no manda estos avisos: con él,
+     el receptor refleja el estado de forma optimista y ya.) */
+  function handleReceptorMessage(msg){
+    let d = msg;
+    if(typeof d === 'string'){ try{ d = JSON.parse(d); }catch(e){ return; } }
+    if(!d || d.type !== 'event') return;
+    switch(d.name){
+      case 'estado': {
+        const v = d.value || {};
+        forEachMirror('opt1', el => el.classList.toggle('active', !!v.mirror));
+        if('mic' in v) forEachMirror('opt5', el => el.classList.toggle('active', !!v.mic));
+        forEachMirror('opt4', el => el.classList.toggle('active', !!v.countdown));
+        setReceptorMirror(!!v.mirror);
+        if(v.recording && !recording){ startCapture(); seconds = v.segundos || 0; }
+        break;
+      }
+      case 'recordingStarted': startCapture(); break;
+      case 'recordingStopped': stopCapture(); break;
+      case 'recordingResolved':
+        forEachMirror('saveConfirm', p => p.classList.remove('show'));
+        break;
+    }
+  }
+
+  let viewRotation = 0;
+  let receptorMirrorOn = false;
+
+  /* Acomoda el video entrante según giro + espejo. En 90/270 se encoge lo
+     justo para caber completo dentro del marco, sin recortes raros. */
+  function applyRemoteVideoLayout(){
+    const v = document.getElementById('remoteVideo');
+    const frame = document.getElementById('videoFrame');
+    const m = receptorMirrorOn ? ' scaleX(-1)' : '';
+    if(viewRotation % 180 === 0){
+      v.style.objectFit = OBS_MODE ? 'contain' : 'cover';
+      v.style.transform = (viewRotation ? 'rotate(' + viewRotation + 'deg)' : '') + m;
+    } else {
+      const r = frame.getBoundingClientRect();
+      const k = (r.width > 0 && r.height > 0) ? Math.min(r.width / r.height, r.height / r.width) : 1;
+      v.style.objectFit = 'contain';
+      v.style.transform = 'rotate(' + viewRotation + 'deg) scale(' + k.toFixed(4) + ')' + m;
+    }
+  }
+
+  function rotateRemoteView(e){
+    e.stopPropagation();
+    playButtonSound();
+    viewRotation = (viewRotation + 90) % 360;
+    applyRemoteVideoLayout();
+  }
+
+  function setReceptorMirror(on){
+    receptorMirrorOn = on;
+    applyRemoteVideoLayout();
+  }
+
+  /* ---------- Caídas y limpieza ---------- */
+  function stopCaptureQuiet(){
+    recording = false;
+    clearInterval(timerInterval);
+    forEachMirror('recordBtn', btn => btn.classList.remove('recording'));
+    forEachMirror('recordLabel', label => label.textContent = 'INICIAR CAPTURA');
+    forEachMirror('timer', t => t.style.display = 'none');
+  }
+
+  function onLinkLost(who){
+    if(role !== who) return;
+    if(!dataConn && !mediaCall) return; // ya se limpió antes
+    clearLinkWatch();
+    if(mediaCall){ try{ mediaCall.close(); }catch(e){} mediaCall = null; }
+    if(dataConn){ try{ dataConn.close(); }catch(e){} dataConn = null; }
+    playErrorSound();
+    if(who === 'emisor'){
+      setEmisorStatus('Se perdió al receptor — esperando de nuevo…', true);
+    } else {
+      if(recording) stopCaptureQuiet();
+      document.getElementById('remoteVideo').srcObject = null;
+      document.getElementById('videoFrame').classList.remove('live');
+      document.getElementById('videoStatusText').textContent = OBS_MODE ? 'Reconectando…' : 'Se perdió al emisor — vuelve a conectar';
+      obsRetry();
+    }
+  }
+
+  function stopRole(){
+    const was = role;
+    role = null;
+    idTries = 0;
+    clearLinkWatch();
+    if(wakeLock){ try{ wakeLock.release(); }catch(e){} wakeLock = null; }
+    if(recording) stopCaptureQuiet();
+    stopRecorder();
+    forEachMirror('saveConfirm', p => p.classList.remove('show'));
+    forEachMirror('opt1', el => el.classList.remove('active'));
+    mirrorOn = false; facing = 'user';
+    micOn = true; forEachMirror('opt5', el => el.classList.add('active'));
+    if(mediaCall){ try{ mediaCall.close(); }catch(e){} mediaCall = null; }
+    if(dataConn){ try{ dataConn.close(); }catch(e){} dataConn = null; }
+    if(peer){ try{ peer.destroy(); }catch(e){} peer = null; }
+    if(localStream){ localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+    if(was === 'emisor'){
+      document.getElementById('localVideo').srcObject = null;
+      document.getElementById('previewFrame').classList.remove('live');
+      document.getElementById('previewStatus').textContent = 'Cámara apagada';
+      setEmisorStatus('Esperando receptor…', true);
+    }
+    if(was === 'receptor'){
+      connectedCode = '';
+      document.getElementById('obsLinkBtn').classList.remove('show');
+      viewRotation = 0; receptorMirrorOn = false;
+      const rv = document.getElementById('remoteVideo');
+      rv.srcObject = null; rv.style.transform = ''; rv.style.objectFit = '';
+      document.getElementById('videoFrame').classList.remove('live');
+      document.getElementById('videoStatusText').textContent = 'Sin señal';
+    }
+  }
+
+  /* El campo de código: solo dígitos, y Enter conecta. */
+  document.getElementById('codeInput').addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
+  });
+  document.getElementById('codeInput').addEventListener('keydown', e => {
+    if(e.key === 'Enter' && role === 'receptor') connectReceptor();
+  });
+  window.addEventListener('resize', () => { if(role === 'receptor') applyRemoteVideoLayout(); });
+
+  // Arranque del MODO OBS: directo al receptor, con conexión automática.
+  if(OBS_MODE){
+    document.getElementById('screen-mode').classList.remove('active');
+    document.getElementById('screen-receptor').classList.add('active');
+    handleRoleChange('mode', 'receptor');
+    document.getElementById('codeInput').value = OBS_CODE;
+    (function esperaYConecta(){
+      if(peer && peer.open) connectReceptor();
+      else setTimeout(esperaYConecta, 400);
+    })();
+  }
+</script>
+</body>
+</html>
